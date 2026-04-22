@@ -1,0 +1,3214 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>計算力育成プログラム</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy:  #1A3A5C;
+    --teal:  #0F6E56;
+    --teal2: #1A9A78;
+    --amber: #C8820A;
+    --coral: #AA3322;
+    --pale:  #F4F7FA;
+    --pale2: #E8EEF5;
+    --ink:   #1E2532;
+    --ink2:  #3C4A60;
+    --mist:  #7A8BA0;
+    --white: #FFFFFF;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.10);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Meiryo", sans-serif;
+    background: var(--pale);
+    color: var(--ink);
+    min-height: 100vh;
+    touch-action: manipulation;
+  }
+
+  /* ── ヘッダー ── */
+  .app-header {
+    background: var(--navy);
+    color: white;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  }
+  .app-header h1 { font-size: 16px; font-weight: 700; letter-spacing: 0.03em; }
+  .app-header .subtitle { font-size: 11px; opacity: 0.65; margin-top: 2px; }
+  .header-badge {
+    margin-left: auto;
+    background: var(--teal);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+
+  /* ── 画面切り替え ── */
+  .screen { display: none; padding: 20px; max-width: 600px; margin: 0 auto; }
+  .screen.active { display: block; }
+
+  /* ── 級選択画面 ── */
+  .screen-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 6px;
+  }
+  .screen-sub {
+    font-size: 12px;
+    color: var(--mist);
+    margin-bottom: 20px;
+  }
+  /* メイングリッド: 3列ベース */
+  .level-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  /* サブグリッド（グループごとに列数を変える） */
+  .sub-grid {
+    display: grid;
+    gap: 8px;
+  }
+  .sub-grid-1 { grid-template-columns: 1fr; }
+  .sub-grid-2 { grid-template-columns: 1fr 1fr; }
+  .sub-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .level-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    box-shadow: var(--shadow);
+    transition: all 0.15s;
+  }
+  .level-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.14); }
+  .level-card.selected {
+    border-color: var(--teal);
+    background: #EBF5F1;
+  }
+  .level-card .badge {
+    display: inline-block;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: white;
+  }
+  .level-card .lname { font-size: 13px; font-weight: 700; color: var(--ink); }
+  .level-card .lmeta { font-size: 11px; color: var(--mist); margin-top: 2px; }
+
+  /* ── モード選択 ── */
+  .mode-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .mode-card {
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    box-shadow: var(--shadow);
+    background: white;
+    transition: all 0.15s;
+  }
+  .mode-card.selected { border-color: var(--teal); background: #EBF5F1; }
+  .mode-card .micon { font-size: 22px; margin-bottom: 4px; }
+  .mode-card .mname { font-size: 13px; font-weight: 700; color: var(--ink); }
+  .mode-card .mdesc { font-size: 11px; color: var(--mist); margin-top: 2px; line-height: 1.5; }
+
+  /* ── ボタン ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+  .btn-primary { background: var(--teal); color: white; width: 100%; font-size: 15px; }
+  .btn-primary:hover { background: var(--teal2); }
+  .btn-primary:disabled { background: var(--mist); cursor: not-allowed; }
+  .btn-secondary { background: var(--pale2); color: var(--ink2); }
+  .btn-secondary:hover { background: #d8e2ed; }
+  .btn-danger { background: var(--coral); color: white; }
+  .btn-sm { padding: 8px 16px; font-size: 12px; }
+
+  /* ── 問題画面 ── */
+  .quiz-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .quiz-level-badge {
+    background: var(--navy);
+    color: white;
+    border-radius: 8px;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .quiz-progress {
+    flex: 1;
+    font-size: 12px;
+    color: var(--mist);
+    text-align: right;
+  }
+  .timer-bar-wrap {
+    background: var(--pale2);
+    border-radius: 6px;
+    height: 8px;
+    margin-bottom: 6px;
+    overflow: hidden;
+  }
+  .timer-bar {
+    height: 100%;
+    border-radius: 6px;
+    background: var(--teal);
+    transition: width 0.5s linear, background 0.3s;
+  }
+  .timer-bar.warning { background: var(--amber); }
+  .timer-bar.danger  { background: var(--coral); }
+  .timer-text {
+    font-size: 11px;
+    color: var(--mist);
+    text-align: right;
+    margin-bottom: 16px;
+  }
+  .progress-bar-wrap {
+    background: var(--pale2);
+    border-radius: 6px;
+    height: 5px;
+    margin-bottom: 20px;
+  }
+  .progress-bar {
+    height: 100%;
+    border-radius: 6px;
+    background: var(--teal2);
+    transition: width 0.3s;
+  }
+
+  /* ── 問題カード ── */
+  .question-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 28px 24px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .q-num {
+    font-size: 11px;
+    color: var(--mist);
+    margin-bottom: 12px;
+  }
+  .q-problem {
+    font-size: 38px;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: 0.05em;
+    margin-bottom: 24px;
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .q-frac {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 28px;
+    margin: 0 4px;
+  }
+  .q-frac-num { border-bottom: 2px solid var(--navy); padding: 0 4px; line-height: 1.1; }
+  .q-frac-den { line-height: 1.1; }
+
+  .answer-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .answer-input {
+    width: 140px;
+    padding: 10px 14px;
+    font-size: 24px;
+    font-weight: 700;
+    border: 2px solid var(--pale2);
+    border-radius: 10px;
+    text-align: center;
+    color: var(--navy);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .answer-input:focus { border-color: var(--teal); }
+  .answer-input.correct { border-color: var(--teal); background: #EBF5F1; }
+  .answer-input.incorrect { border-color: var(--coral); background: #FDECEA; }
+
+  .answer-hint {
+    font-size: 12px;
+    color: var(--mist);
+    margin-top: 10px;
+    min-height: 18px;
+  }
+  .answer-hint.correct-msg { color: var(--teal); font-weight: 700; }
+  .answer-hint.incorrect-msg { color: var(--coral); font-weight: 700; }
+
+  .quiz-action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .quiz-action-row .btn { flex: 1; }
+
+  /* 練習モード解答表示 */
+  .practice-answer {
+    background: #EBF5F1;
+    border: 1.5px solid var(--teal);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--teal);
+    text-align: center;
+    margin-top: 12px;
+  }
+
+  /* ── 結果画面 ── */
+  .result-card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .result-header {
+    background: var(--navy);
+    color: white;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .result-header .big-score {
+    font-size: 32px;
+    font-weight: 800;
+  }
+  .result-header .score-denom { font-size: 18px; opacity: 0.7; }
+  .result-header .score-info { margin-left: auto; text-align: right; font-size: 12px; opacity: 0.8; }
+  .result-header .passed {
+    background: var(--teal);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 4px;
+    display: inline-block;
+  }
+  .result-header .failed {
+    background: var(--coral);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 4px;
+    display: inline-block;
+  }
+  .result-body { padding: 14px 18px; }
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .stat-item {
+    background: var(--pale);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+  }
+  .stat-item .sv { font-size: 22px; font-weight: 800; color: var(--navy); }
+  .stat-item .sl { font-size: 10px; color: var(--mist); margin-top: 2px; }
+
+  /* 問題ごとの結果リスト */
+  .detail-list { margin-top: 10px; }
+  .detail-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--pale2);
+    font-size: 12px;
+  }
+  .detail-item:last-child { border-bottom: none; }
+  .detail-item .di-num { color: var(--mist); width: 24px; flex-shrink: 0; }
+  .detail-item .di-prob { flex: 1; color: var(--ink2); }
+  .detail-item .di-ans { font-weight: 700; color: var(--ink); }
+  .detail-item .di-mark {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; flex-shrink: 0;
+  }
+  .di-mark.ok { background: #D4EDDA; color: var(--teal); }
+  .di-mark.ng { background: #FDECEA; color: var(--coral); }
+  .di-mark.skip { background: var(--pale2); color: var(--mist); }
+  .di-wrong-ans { color: var(--coral); font-size: 11px; }
+
+  /* 履歴画面 */
+  .history-list { }
+  .history-item {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .hi-badge {
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+  .hi-info { flex: 1; }
+  .hi-score { font-size: 14px; font-weight: 700; color: var(--navy); }
+  .hi-meta { font-size: 11px; color: var(--mist); margin-top: 2px; }
+  .hi-result {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 5px;
+  }
+  .hi-result.pass { background: #EBF5F1; color: var(--teal); }
+  .hi-result.fail { background: #FDECEA; color: var(--coral); }
+
+  /* タブ */
+  .tab-row {
+    display: flex;
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px;
+    background: none;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mist);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn.active { background: var(--navy); color: white; }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--mist);
+  }
+  .empty-state .ei { font-size: 36px; margin-bottom: 10px; }
+  .empty-state p { font-size: 13px; line-height: 1.6; }
+
+  /* ── カウントダウン ── */
+  @keyframes cdPop {
+    0%   { transform: scale(1.8); opacity: 0; }
+    50%  { opacity: 1; }
+    100% { transform: scale(1); opacity: 0.45; }
+  }
+  #countdownOverlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    pointer-events: none;
+  }
+  #countdownNum {
+    font-size: 220px;
+    font-weight: 900;
+    line-height: 1;
+    color: #1A3A5C;
+    opacity: 0.45;
+    user-select: none;
+    animation: cdPop 0.4s cubic-bezier(0.22,1,0.36,1);
+  }
+
+  /* ── テンキーパッド ── */
+  .numpad-wrap {
+    margin-top: 12px;
+  }
+  /* 入力表示エリア */
+  .numpad-display {
+    background: var(--pale2);
+    border: 2px solid var(--pale2);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--navy);
+    text-align: right;
+    min-height: 52px;
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
+    transition: border-color 0.2s, background 0.2s;
+    word-break: break-all;
+  }
+  .numpad-display.active {
+    border-color: var(--teal);
+    background: white;
+  }
+  .numpad-display.correct  { border-color: var(--teal);  background: #EDFFF4; color: var(--teal); }
+  .numpad-display.incorrect{ border-color: var(--coral); background: #FDECEA; color: var(--coral); }
+
+  /* 2ボックス用ラベル */
+  .numpad-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mist);
+    margin-bottom: 4px;
+    letter-spacing: 0.04em;
+  }
+  .numpad-two-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .numpad-two-row .nd-wrap { flex: 1; }
+  .numpad-two-row .nd-sep {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--mist);
+    flex-shrink: 0;
+  }
+
+  /* グリッド */
+  .numpad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .np-btn {
+    background: white;
+    border: 1.5px solid var(--pale2);
+    border-radius: 12px;
+    padding: 0;
+    height: 58px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+    transition: background 0.1s, transform 0.1s;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .np-btn:active { background: var(--pale2); transform: scale(0.95); }
+  .np-btn.np-minus { color: var(--amber); font-size: 26px; }
+  .np-btn.np-del   { color: var(--coral); font-size: 20px; }
+  .np-btn.np-zero  { }
+  .np-btn.np-next  { background: var(--pale2); color: var(--ink2); font-size: 13px; font-weight: 700; }
+
+  /* 決定ボタン */
+  .np-submit {
+    width: 100%;
+    padding: 14px;
+    background: var(--teal);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    box-shadow: 0 3px 10px rgba(15,110,86,0.3);
+    transition: background 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .np-submit:active { background: var(--teal2); transform: scale(0.98); }
+  .np-submit:disabled { background: var(--mist); box-shadow: none; }
+
+
+  /* ── 縦分数表示 ── */
+  .frac-display {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1.1;
+  }
+  .frac-num {
+    border-bottom: 2.5px solid var(--navy);
+    padding: 0 6px 1px;
+    min-width: 24px;
+    text-align: center;
+  }
+  .frac-den {
+    padding: 1px 6px 0;
+    min-width: 24px;
+    text-align: center;
+  }
+  /* 帯分数: 整数 + 縦分数 */
+  .mixed-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  /* numpad内の分数ボックスも縦表示 */
+  .np-frac-wrap {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .np-frac-num-box,
+  .np-frac-den-box {
+    background: var(--pale2);
+    border: 2px solid var(--pale2);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--navy);
+    min-width: 60px;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .np-frac-num-box { border-bottom: 2.5px solid var(--navy); border-radius: 8px 8px 0 0; }
+  .np-frac-den-box { border-top: none; border-radius: 0 0 8px 8px; }
+  .np-frac-num-box.active, .np-frac-den-box.active { border-color: var(--teal); background: white; }
+  .np-frac-num-box.correct, .np-frac-den-box.correct { border-color: var(--teal); background: #EDFFF4; color: var(--teal); }
+  .np-frac-num-box.incorrect, .np-frac-den-box.incorrect { border-color: var(--coral); background: #FDECEA; color: var(--coral); }
+  .frac-line { width: 100%; height: 2.5px; background: var(--navy); margin: 1px 0; }
+
+
+  /* ── ログイン ── */
+  .login-wrap { max-width:380px; margin:40px auto; padding:0 20px; }
+  .login-card { background:white; border-radius:var(--radius); box-shadow:var(--shadow); padding:28px 24px; }
+  .login-logo  { text-align:center; margin-bottom:20px; }
+  .login-logo .lname { font-size:18px; font-weight:800; color:var(--navy); }
+  .login-logo .lsub  { font-size:11px; color:var(--mist); margin-top:2px; }
+  .form-group { margin-bottom:14px; }
+  .form-group label { font-size:12px; font-weight:700; color:var(--ink2); display:block; margin-bottom:4px; }
+  .form-input {
+    width:100%; padding:10px 14px; font-size:15px;
+    border:2px solid var(--pale2); border-radius:8px; outline:none;
+    transition:border-color 0.15s; font-family:inherit;
+  }
+  .form-input:focus { border-color:var(--teal); }
+  .login-err { color:var(--coral); font-size:12px; margin-top:8px; min-height:18px; text-align:center; }
+  .user-badge {
+    display:flex; align-items:center; gap:8px;
+    background:var(--teal); color:white;
+    border-radius:8px; padding:5px 12px; font-size:12px; font-weight:700;
+  }
+  .logout-btn {
+    background:none; border:1.5px solid rgba(255,255,255,0.5);
+    color:white; border-radius:6px; padding:3px 8px;
+    font-size:11px; cursor:pointer; font-weight:600;
+  }
+
+  /* ── ランキング画面 ── */
+  .rank-table { width:100%; border-collapse:collapse; margin-top:8px; }
+  .rank-table th { background:var(--navy); color:white; padding:8px 10px; font-size:12px; }
+  .rank-table td { padding:8px 10px; font-size:13px; border-bottom:1px solid var(--pale2); }
+  .rank-table tr:nth-child(even) td { background:var(--pale); }
+  .rank-1 td { background:#FFF8E1 !important; font-weight:700; }
+  .rank-2 td { background:#F5F5F5 !important; }
+  .rank-3 td { background:#FBE9E7 !important; }
+  .rank-me td { color:var(--teal); font-weight:700; }
+
+  /* ── 自分のログ ── */
+  .mylog-item {
+    display:flex; align-items:center; gap:8px;
+    padding:8px 0; border-bottom:1px solid var(--pale2);
+    font-size:12px;
+  }
+  .mylog-mode { padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; }
+  .mylog-mode.test { background:var(--coral); color:white; }
+  .mylog-mode.practice { background:var(--teal); color:white; }
+  .mylog-pass { color:var(--teal); font-weight:700; font-size:11px; }
+
+</style>
+</head>
+<body>
+
+
+<div class="countdown-overlay" id="countdownOverlay" style="display:none;">
+  <div class="countdown-num" id="countdownNum">3</div>
+  <div class="countdown-label" id="countdownLabel">準備して...</div>
+</div>
+
+<div class="app-header">
+  <div>
+    <div class="app-header h1" style="font-size:16px;font-weight:700;">計算力育成プログラム</div>
+    <div class="subtitle">京進 TOPΣ 本郷校</div>
+  </div>
+  <div id="headerBadge" style="display:flex;align-items:center;gap:8px;">
+    <div id="userBadgeArea"></div>
+  </div>
+</div>
+
+<!-- 画面1: 級選択 -->
+
+<!-- 画面0: ログイン -->
+<div class="screen" id="screenLogin">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="lname">計算力育成プログラム</div>
+        <div class="lsub">京進 TOPΣ 本郷校</div>
+      </div>
+      <div class="form-group">
+        <label>生徒コード</label>
+        <input class="form-input" id="loginCode" type="text" placeholder="例: H001" autocomplete="off" inputmode="text">
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input class="form-input" id="loginPw" type="password" placeholder="パスワード" autocomplete="off">
+      </div>
+      <div class="login-err" id="loginErr"></div>
+      <button class="btn btn-primary" onclick="doLogin()" style="margin-top:8px;">ログイン</button>
+    </div>
+  </div>
+</div>
+
+<!-- 画面0b: ニックネーム設定（初回） -->
+<div class="screen" id="screenNickname">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="lname">ニックネームを決めよう</div>
+        <div class="lsub">ランキングに表示される名前です（10文字以内）</div>
+      </div>
+      <div class="form-group">
+        <label>ニックネーム</label>
+        <input class="form-input" id="nicknameInput" type="text" placeholder="例: そろばん太郎" maxlength="10" autocomplete="off">
+      </div>
+      <div class="login-err" id="nicknameErr"></div>
+      <button class="btn btn-primary" onclick="doSetNickname()" style="margin-top:8px;">決定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 画面: ランキング -->
+<div class="screen" id="screenRanking">
+  <p class="screen-title" style="margin-top:16px;">🏆 ランキング</p>
+  <p class="screen-sub" id="rankingTitle">読み込み中...</p>
+  <div id="rankingBody"></div>
+  <button class="btn btn-secondary" onclick="showScreen('screenSelect')" style="margin-top:16px;width:100%;">← 戻る</button>
+</div>
+
+<!-- 画面: 自分のログ -->
+<div class="screen" id="screenMyLogs">
+  <p class="screen-title" style="margin-top:16px;">📋 自分の記録</p>
+  <div id="myLogsBody"><p style="color:var(--mist);font-size:13px;">読み込み中...</p></div>
+  <button class="btn btn-secondary" onclick="showScreen('screenSelect')" style="margin-top:16px;width:100%;">← 戻る</button>
+</div>
+
+<div class="screen" id="screenSelect">
+  <p class="screen-title" style="margin-top:16px;">問題を選ぶ</p>
+  <p class="screen-sub">級を選んでスタートしてください</p>
+
+  <div class="level-grid" id="levelGrid"></div>
+
+  <p class="screen-title" style="font-size:15px; margin-bottom:8px;">モードを選ぶ</p>
+  <div class="mode-row">
+    <div class="mode-card selected" id="modePractice" onclick="selectMode('practice')">
+      <div class="micon">📖</div>
+      <div class="mname">練習モード</div>
+      <div class="mdesc">不正解のとき正解が表示されます</div>
+    </div>
+    <div class="mode-card" id="modeTest" onclick="selectMode('test')">
+      <div class="micon">⏱</div>
+      <div class="mname">検定モード</div>
+      <div class="mdesc">解答を隠して本番形式</div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="startBtn" onclick="startQuiz()" disabled>
+    スタート →
+  </button>
+  <button class="btn btn-secondary" id="rankingBtn" onclick="openRanking()"
+    style="margin-top:10px;width:100%;display:none;">
+    🏆 ランキングを見る（検定・満点のみ）
+  </button>
+
+  <div style="display:flex;gap:10px;margin-top:12px;">
+    <button class="btn btn-secondary" onclick="openMyLogs()"
+      style="flex:1;font-size:12px;">📋 自分の記録</button>
+    <button class="btn btn-danger btn-sm" onclick="doLogout()"
+      style="font-size:12px;padding:8px 16px;">ログアウト</button>
+  </div>
+
+  <div id="historySection" style="margin-top:24px;"></div>
+</div>
+
+<!-- 画面2: 問題 -->
+<div class="screen" id="screenQuiz">
+  <div class="quiz-header">
+    <div class="quiz-level-badge" id="qLevelBadge">10級</div>
+    <div class="quiz-progress" id="qProgress">1 / 20</div>
+    <button class="btn btn-secondary btn-sm" onclick="abortQuiz()" style="background:#FDECEA;color:#AA3322;border:1.5px solid #AA3322;">■ 中断</button>
+  </div>
+
+  <div class="timer-bar-wrap">
+    <div class="timer-bar" id="timerBar" style="width:100%"></div>
+  </div>
+  <div class="timer-text" id="timerText">制限時間: 3:00</div>
+  <div style="font-size:11px;color:var(--mist);text-align:center;margin-bottom:8px;letter-spacing:0.02em;" id="opGuide">答えを入力 → Enter で採点　→　自動で次の問題へ</div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" id="progressBar" style="width:0%"></div>
+  </div>
+
+  <div class="question-card" id="questionCard">
+    <div class="q-num" id="qNum">問題 1</div>
+    <div class="q-problem" id="qProblem">　</div>
+
+    <!-- 通常の1ボックス入力 -->
+    <div class="answer-row" id="singleAnswerRow">
+      <div style="font-size:28px;font-weight:700;color:var(--ink);">＝</div>
+      <input class="answer-input" id="answerInput"
+        type="text" inputmode="none" autocomplete="off" readonly
+        placeholder="テンキーで入力"
+        onkeydown="handleKeydown(event)"
+        oninput="handleInput(event)">
+    </div>
+
+    <!-- 2ボックス入力（和と積など） -->
+    <div class="answer-row" id="twoAnswerRow" style="display:none; gap:8px; flex-wrap:wrap; justify-content:center;">
+      <input class="answer-input" id="answerInput1"
+        type="text" inputmode="none" autocomplete="off" readonly
+        style="width:100px;"
+        placeholder="□"
+        onkeydown="handleKeydownTwo(event,1)">
+      <div style="font-size:20px;font-weight:700;color:var(--mist);align-self:center;">と</div>
+      <input class="answer-input" id="answerInput2"
+        type="text" inputmode="none" autocomplete="off" readonly
+        style="width:100px;"
+        placeholder="□"
+        onkeydown="handleKeydownTwo(event,2)">
+    </div>
+
+    <div class="answer-hint" id="answerHint"></div>
+    <div id="practiceAnswerDiv"></div>
+  </div>
+
+  <!-- テンキーパッド -->
+  <div style="max-width:340px; margin:0 auto; padding:0 4px;">
+    <div class="numpad-wrap" id="numpadWrap">
+      <div id="numpadSingleBox">
+        <div class="numpad-label">テンキー入力</div>
+        <div class="numpad-display active" id="npDisplay">？</div>
+      </div>
+      <div id="numpadTwoBox" style="display:none;">
+        <div class="numpad-label" id="npBoxTitle">テンキー入力</div>
+        <!-- 2ボックス（two / sqrt） -->
+        <div class="numpad-two-row" id="npRow2">
+          <div class="nd-wrap">
+            <div class="numpad-label" id="npLabel1">1つ目</div>
+            <div class="numpad-display active" id="npDisplay1">？</div>
+          </div>
+          <div class="nd-sep" id="npSep">と</div>
+          <div class="nd-wrap">
+            <div class="numpad-label" id="npLabel2">2つ目</div>
+            <div class="numpad-display" id="npDisplay2">？</div>
+          </div>
+        </div>
+        <!-- 真分数（frac）: 縦表示 分子/分母 -->
+        <div id="npRowFrac" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:10px;">
+            <div class="np-frac-wrap">
+              <div class="numpad-label" style="font-size:11px;text-align:center;">分子</div>
+              <div class="np-frac-num-box active" id="npFracNum">？</div>
+              <div class="np-frac-den-box" id="npFracDen">？</div>
+              <div class="numpad-label" style="font-size:11px;text-align:center;">分母</div>
+            </div>
+          </div>
+        </div>
+        <!-- 帯分数（fracMixed）: 整数 + 縦分数 -->
+        <div id="npRowFracMixed" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+            <div>
+              <div class="numpad-label" style="font-size:11px;text-align:center;">整数</div>
+              <div class="numpad-display active" id="npMixInt" style="min-width:60px;">？</div>
+            </div>
+            <div style="font-size:20px;font-weight:900;color:var(--navy);margin-top:8px;">と</div>
+            <div class="np-frac-wrap">
+              <div class="numpad-label" style="font-size:11px;text-align:center;">分子</div>
+              <div class="np-frac-num-box" id="npMixNum">？</div>
+              <div class="np-frac-den-box" id="npMixDen">？</div>
+              <div class="numpad-label" style="font-size:11px;text-align:center;">分母</div>
+            </div>
+          </div>
+        </div>
+        <!-- 一次関数（linearFunc）: 傾き（/で分数可）→ 切片 -->
+        <div id="npRowLinearFunc" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:nowrap;">
+            <div style="text-align:center;">
+              <div class="numpad-label" style="font-size:11px;">傾き a</div>
+              <div class="numpad-display active" id="npLfSlope" style="min-width:80px;font-size:22px;">？</div>
+              <div style="font-size:9px;color:var(--mist);margin-top:2px;">例: 2　-3　1/2　-1/3<br>傾き±1のときは 1 または -1</div>
+            </div>
+            <div style="font-size:16px;font-weight:700;color:var(--navy);margin-top:-8px;">x ＋</div>
+            <div style="text-align:center;">
+              <div class="numpad-label" style="font-size:11px;">切片 b</div>
+              <div class="numpad-display" id="npLfIntercept" style="min-width:80px;font-size:22px;">？</div>
+            </div>
+          </div>
+        </div>
+        <!-- √展開（sqrtExpand）: 整数 ±ボタン 係数√根号 -->
+        <div id="npRowSqrtExpand" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:nowrap;">
+            <div class="nd-wrap" style="max-width:72px;">
+              <div class="numpad-label">整数部</div>
+              <div class="numpad-display active" id="npSeInt">？</div>
+            </div>
+            <button class="np-sign-btn" id="npSeSignBtn" ontouchstart=""
+              onclick="toggleSeSign()" style="
+                height:52px;min-width:48px;font-size:22px;font-weight:900;
+                background:var(--pale2);border:2px solid var(--teal);border-radius:10px;
+                color:var(--teal);cursor:pointer;-webkit-tap-highlight-color:transparent;
+                touch-action:manipulation;display:flex;align-items:center;justify-content:center;">＋</button>
+            <div class="nd-wrap" style="max-width:72px;">
+              <div class="numpad-label">√係数</div>
+              <div class="numpad-display" id="npSeCoef">？</div>
+            </div>
+            <div style="font-size:22px;font-weight:900;color:var(--navy);">√</div>
+            <div class="nd-wrap" style="max-width:72px;">
+              <div class="numpad-label">√の中</div>
+              <div class="numpad-display" id="npSeRad">？</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="numpad-grid">
+      <button class="np-btn" ontouchstart="" onclick="npInput('7')">7</button>
+      <button class="np-btn" ontouchstart="" onclick="npInput('8')">8</button>
+      <button class="np-btn" ontouchstart="" onclick="npInput('9')">9</button>
+      <button class="np-btn" ontouchstart="" onclick="npInput('4')">4</button>
+      <button class="np-btn" ontouchstart="" onclick="npInput('5')">5</button>
+      <button class="np-btn" ontouchstart="" onclick="npInput('6')">6</button>
+      <button class="np-btn" ontouchstart="" onclick="npInput('1')">1</button>
+      <button class="np-btn" ontouchstart="" onclick="npInput('2')">2</button>
+      <button class="np-btn" ontouchstart="" onclick="npInput('3')">3</button>
+      <button class="np-btn np-minus" ontouchstart="" onclick="npInput('-')">−</button>
+      <button class="np-btn np-zero"  ontouchstart="" onclick="npInput('0')">0</button>
+      <button class="np-btn np-del"   ontouchstart="" onclick="npDel()">⌫</button>
+    </div>
+    <!-- / ボタン: linearFunc の傾き入力フェーズのみ表示 -->
+    <div id="npSlashRow" style="display:none;margin-bottom:8px;">
+      <button class="np-btn" ontouchstart="" onclick="npInput('/')"
+        style="width:100%;height:50px;font-size:20px;font-weight:900;color:var(--amber);border-color:var(--amber);">
+        ／（分数の場合）
+      </button>
+    </div>
+    <button class="np-submit" id="npSubmit" onclick="npSubmit()">決定</button>
+  </div>
+
+  <div class="quiz-action-row" style="margin-top:10px;">
+    <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" disabled style="display:none;">次へ →</button>
+  </div>
+</div>
+
+<!-- 画面3: 結果 -->
+<div class="screen" id="screenResult">
+  <p class="screen-title" style="margin-top:16px;">結果</p>
+
+  <div class="result-card">
+    <div class="result-header" id="resultHeader"></div>
+    <div class="result-body">
+      <div class="stat-row" id="statRow"></div>
+      <div class="detail-list" id="detailList"></div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-top:4px;">
+    <button class="btn btn-secondary" style="flex:1" onclick="showScreen('screenSelect')">← 戻る</button>
+    <button class="btn btn-primary" style="flex:1" onclick="retryQuiz()">もう一度</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// 定数・設定
+// ════════════════════════════════════════════════════════
+// ★ここにデプロイ後のGAS URLを貼り付け
+const GAS_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+
+const LEVELS = [
+  // ── 10〜8級: 1列 ──────────────────────────────────
+  {key:"10kyu", label:"10級", color:"#0F6E56", group:"10-8",
+   title:"10の補数",  desc:"20問・3分", timeLimit:180, nQ:20, passRate:0.90, gen:()=>genComplement10()},
+  {key:"9kyu",  label:"9級",  color:"#0F6E56", group:"10-8",
+   title:"1桁たし算", desc:"20問・2分", timeLimit:120, nQ:20, passRate:0.88, gen:()=>genAdd1digit()},
+  {key:"8kyu",  label:"8級",  color:"#0F6E56", group:"10-8",
+   title:"100の補数", desc:"20問・3分", timeLimit:180, nQ:20, passRate:0.88, gen:()=>genComplement100()},
+
+  // ── 7〜4級: 2列 ──────────────────────────────────
+  {key:"7kyuA", label:"7級A", color:"#1A9A78", group:"7-4",
+   title:"2桁引き算",   desc:"20問・2分30秒", timeLimit:150, nQ:20, passRate:0.88, gen:()=>genSub2digit()},
+  {key:"7kyuB", label:"7級B", color:"#1A9A78", group:"7-4",
+   title:"九九（2〜5段）",desc:"20問・2分30秒",timeLimit:150, nQ:20, passRate:1.0,  gen:()=>genKuku25()},
+  {key:"6kyuA", label:"6級A", color:"#1A9A78", group:"7-4",
+   title:"九九（全段）", desc:"20問・1分30秒", timeLimit:90,  nQ:20, passRate:1.0,  gen:()=>genKukuAll()},
+  {key:"6kyuB", label:"6級B", color:"#1A9A78", group:"7-4",
+   title:"3桁たし算",   desc:"12問・2分",     timeLimit:120, nQ:12, passRate:0.88, gen:()=>gen3digitAdd()},
+  {key:"6kyuC", label:"6級C", color:"#1A9A78", group:"7-4",
+   title:"九九÷（余りなし）", desc:"20問・2分", timeLimit:120, nQ:20, passRate:1.0, gen:()=>genKukuDiv()},
+  {key:"6kyuD", label:"6級D", color:"#1A9A78", group:"7-4",
+   title:"九九÷（余りあり）", desc:"20問・3分", timeLimit:180, nQ:20, passRate:0.88,
+   inputType:"two", inputLabels:["商","あまり"], gen:()=>genKukuDivRem()},
+  {key:"5kyuA", label:"5級A", color:"#3B8C2A", group:"7-4",
+   title:"3桁引き算",   desc:"12問・2分",     timeLimit:120, nQ:12, passRate:0.88, gen:()=>gen3digitSub()},
+  {key:"5kyuB", label:"5級B", color:"#3B8C2A", group:"7-4",
+   title:"3桁MIX",     desc:"12問・2分30秒", timeLimit:150, nQ:12, passRate:0.88, gen:()=>gen3digitMix()},
+  {key:"4kyuA", label:"4級A", color:"#3B8C2A", group:"7-4",
+   title:"2桁×2",      desc:"12問・1分30秒", timeLimit:90,  nQ:12, passRate:0.88, gen:()=>genTimes2()},
+  {key:"4kyuB", label:"4級B", color:"#3B8C2A", group:"7-4",
+   title:"÷2（答え2桁）",desc:"12問・2分",   timeLimit:120, nQ:12, passRate:0.88, gen:()=>genDiv2()},
+  {key:"4kyuC", label:"4級C", color:"#3B8C2A", group:"7-4",
+   title:"2桁×5",      desc:"12問・1分30秒", timeLimit:90,  nQ:12, passRate:0.88, gen:()=>genTimes5only()},
+  {key:"4kyuD", label:"4級D", color:"#3B8C2A", group:"7-4",
+   title:"÷5（答え2桁）",desc:"12問・2分",   timeLimit:120, nQ:12, passRate:0.88, gen:()=>genDiv5()},
+  {key:"4kyuE", label:"4級E", color:"#3B8C2A", group:"7-4",
+   title:"2桁×1桁",    desc:"12問・2分30秒", timeLimit:150, nQ:12, passRate:0.88, gen:()=>gen2x1()},
+  {key:"4kyuF", label:"4級F", color:"#3B8C2A", group:"7-4",
+   title:"÷1桁（答え2桁）",desc:"12問・2分30秒",timeLimit:150,nQ:12,passRate:0.88,gen:()=>genDiv1digit()},
+
+  // ── 3〜1級: 3列 ──────────────────────────────────
+  {key:"3kyuA", label:"3級A", color:"#C8820A", group:"3-1",
+   title:"○5型かけ算",  desc:"12問・2分30秒", timeLimit:150, nQ:12, passRate:0.88, gen:()=>genType_O5()},
+  {key:"3kyuB", label:"3級B", color:"#C8820A", group:"3-1",
+   title:"×5・×25・×125",desc:"12問・2分30秒",timeLimit:150, nQ:12, passRate:0.88, gen:()=>genMultSpecial()},
+  {key:"3kyuC", label:"3級C", color:"#C8820A", group:"3-1",
+   title:"×99型",       desc:"12問・2分",     timeLimit:120, nQ:12, passRate:0.88, gen:()=>genTimes99()},
+  {key:"3kyuD", label:"3級D", color:"#C8820A", group:"3-1",
+   title:"2桁×11",      desc:"12問・1分30秒", timeLimit:90,  nQ:12, passRate:0.88, gen:()=>genTimes11()},
+  {key:"3kyuE", label:"3級E", color:"#C8820A", group:"3-1",
+   title:"工夫MIX（3A〜3D）",desc:"12問・3分", timeLimit:180, nQ:12, passRate:0.85, gen:()=>genKakuMix3()},
+  {key:"3kyuF", label:"3級F", color:"#C8820A", group:"3-1",
+   title:"素因数分解",   desc:"12問・2分",     timeLimit:120, nQ:12, passRate:0.85,
+   inputType:"two", inputLabels:["小","大"], gen:()=>genPrimeFactorize2()},
+  {key:"3kyuG", label:"3級G", color:"#C8820A", group:"3-1",
+   title:"素因数の積→元",desc:"12問・2分",     timeLimit:120, nQ:12, passRate:0.85, gen:()=>genFactorProduct()},
+  {key:"3kyuH", label:"3級H", color:"#C8820A", group:"3-1",
+   title:"和と積→2数",  desc:"20問・3分",     timeLimit:180, nQ:20, passRate:0.85, inputType:"two", gen:()=>genSumProduct()},
+  {key:"3kyuI", label:"3級I", color:"#C8820A", group:"3-1",
+   title:"和差算→2数",  desc:"20問・3分",     timeLimit:180, nQ:20, passRate:0.85, inputType:"two", gen:()=>genSumDiff()},
+  {key:"2kyuA", label:"2級A", color:"#0C447C", group:"3-1",
+   title:"分数たし引き①",desc:"同分母真分数＋真分数・帯分数で答える・10問・2分", timeLimit:120, nQ:10, passRate:0.88, inputType:"fracMixed",      gen:()=>gen2kyu1()},
+  {key:"2kyuB", label:"2級B", color:"#0C447C", group:"3-1",
+   title:"分数たし引き②",desc:"帯分数＋帯分数・帯分数で答える・10問・2分30秒", timeLimit:150, nQ:10, passRate:0.85, inputType:"fracMixed", gen:()=>gen2kyu2()},
+  {key:"2kyuC", label:"2級C", color:"#0C447C", group:"3-1",
+   title:"分数たし引き③",desc:"帯分数−帯分数・帯分数で答える・10問・3分",    timeLimit:180, nQ:10, passRate:0.85, inputType:"fracMixed", gen:()=>gen2kyu3()},
+  {key:"2kyuD", label:"2級D", color:"#0C447C", group:"3-1",
+   title:"分数たし引き④",desc:"異分母・真分数のみ・仮分数で答える・10問・3分", timeLimit:180, nQ:10, passRate:0.85, inputType:"frac", gen:()=>gen2kyu4()},
+  {key:"1kyuA", label:"1級A", color:"#3C3489", group:"3-1",
+   title:"約分",           desc:"既約分数に・仮分数で答える・10問・2分",    timeLimit:120, nQ:10, passRate:0.88, inputType:"frac", gen:()=>gen1kyu1()},
+  {key:"1kyuB", label:"1級B", color:"#3C3489", group:"3-1",
+   title:"整数×分数＝整数", desc:"答えは整数・10問・2分",                  timeLimit:120, nQ:10, passRate:0.88, gen:()=>gen1kyuB()},
+  {key:"1kyuC", label:"1級C", color:"#3C3489", group:"3-1",
+   title:"分数かけ算①",    desc:"約分1回・仮分数で答える・10問・2分30秒",  timeLimit:150, nQ:10, passRate:0.85, inputType:"frac", gen:()=>gen1kyu2()},
+  {key:"1kyuD", label:"1級D", color:"#3C3489", group:"3-1",
+   title:"分数かけ算②",    desc:"約分2〜3回・仮分数で答える・10問・3分",   timeLimit:180, nQ:10, passRate:0.85, inputType:"frac", gen:()=>gen1kyu3()},
+  {key:"1kyuE", label:"1級E", color:"#3C3489", group:"3-1",
+   title:"分数かけ算③",    desc:"3つの分数・仮分数で答える・10問・3分",    timeLimit:180, nQ:10, passRate:0.85, inputType:"frac", gen:()=>gen1kyu4()},
+
+  // ── 段位: 3列 ─────────────────────────────────────
+  {key:"shodan_a", label:"初段A", color:"#5C3A1A", group:"dan",
+   title:"正負の和（2項）",desc:"20問・2分",   timeLimit:120, nQ:20, passRate:0.88, gen:()=>genSignedSum2()},
+  {key:"shodan_b", label:"初段B", color:"#5C3A1A", group:"dan",
+   title:"正負の和（3項）",desc:"20問・3分",   timeLimit:180, nQ:20, passRate:0.85, gen:()=>genSignedSum3()},
+  {key:"shodan_c", label:"初段C", color:"#5C3A1A", group:"dan",
+   title:"正負のかけ算",   desc:"20問・2分",   timeLimit:120, nQ:20, passRate:0.88, gen:()=>genSignedMult()},
+  {key:"nidan_a",  label:"二段A", color:"#7A3A1A", group:"dan",
+   title:"正負のわり算",   desc:"20問・2分",   timeLimit:120, nQ:20, passRate:0.88, gen:()=>genSignedDiv()},
+  {key:"nidan_b",  label:"二段B", color:"#7A3A1A", group:"dan",
+   title:"平方数",         desc:"20問・2分",   timeLimit:120, nQ:20, passRate:0.88, gen:()=>genSquares()},
+  {key:"nidan_c",  label:"二段C", color:"#7A3A1A", group:"dan",
+   title:"平方根",         desc:"20問・2分",   timeLimit:120, nQ:20, passRate:0.88, gen:()=>genSqrtInverse()},
+  {key:"sandan_a", label:"三段A", color:"#AA3322", group:"dan",
+   title:"連立（加減）",   desc:"8問・4分",    timeLimit:240, nQ:8,  passRate:0.80,
+   inputType:"two", inputLabels:["x =","y ="], gen:()=>genSimultaneous()},
+  {key:"sandan_b", label:"三段B", color:"#AA3322", group:"dan",
+   title:"連立（代入）",   desc:"8問・4分",    timeLimit:240, nQ:8,  passRate:0.80,
+   inputType:"two", inputLabels:["x =","y ="], gen:()=>genSimultaneousSub()},
+  {key:"yondan_a", label:"四段A", color:"#D85A30", group:"dan",
+   title:"ルート①変形",    desc:"10問・2分",   timeLimit:120, nQ:10, passRate:0.80,
+   inputType:"sqrt", inputLabels:["係数","√の中"], gen:()=>genSqrtTransform()},
+  {key:"yondan_b", label:"四段B", color:"#D85A30", group:"dan",
+   title:"ルート②かけ算",  desc:"10問・2分",   timeLimit:120, nQ:10, passRate:0.80,
+   inputType:"sqrt", inputLabels:["係数","√の中"], gen:()=>genSqrtMult()},
+  {key:"yondan_c", label:"四段C", color:"#D85A30", group:"dan",
+   title:"√の2乗展開",    desc:"10問・3分",   timeLimit:180, nQ:10, passRate:0.80,
+   inputType:"sqrtExpand", gen:()=>genSqrtExpand()},
+  {key:"godan_a", label:"五段A", color:"#1A3A5C", group:"dan",
+   title:"一次関数（傾きと切片）", desc:"傾き±1,2,3,½,⅓・切片整数・8問・4分", timeLimit:240, nQ:8, passRate:0.75,
+   inputType:"linearFunc", gen:()=>genLinearFuncInput()},
+
+  // ── 名人: 全段位MIX ──────────────────────────────
+  {key:"meijin", label:"名人", color:"#1A3A5C", group:"meijin",
+   title:"段位 全問題MIX",  desc:"20問・3分",   timeLimit:180, nQ:20, passRate:0.80,
+   inputType:"mixed", gen:()=>genMeijin()},
+];
+// ════════════════════════════════════════════════════════
+// 問題生成
+// ════════════════════════════════════════════════════════
+function rnd(a, b) { return Math.floor(Math.random()*(b-a+1))+a; }
+function shuffle(arr) {
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+
+function makeProblem(display, answer) {
+  return { display, answer: String(answer) };
+}
+
+function genComplement10() {
+  const pool = [];
+  for(let b=1;b<=9;b++) pool.push(makeProblem(`10 − ${b}`, 10-b));
+  const result = [];
+  while(result.length < 20) result.push(...shuffle(pool));
+  return shuffle(result).slice(0,20);
+}
+
+function genAdd1digit() {
+  const pool = [];
+  for(let a=1;a<=9;a++)
+    for(let b=1;b<=9;b++)
+      pool.push(makeProblem(`${a} ＋ ${b}`, a+b));
+  return shuffle(pool).slice(0,20);
+}
+
+function genComplement100() {
+  const pool = [];
+  for(let tens=1;tens<=9;tens++)
+    for(let ones=1;ones<=9;ones++) {
+      const b=tens*10+ones;
+      pool.push(makeProblem(`100 − ${b}`, 100-b));
+    }
+  return shuffle(pool).slice(0,20);
+}
+
+function genSub2digit() {
+  const pool = [];
+  for(let a=21;a<=99;a++)
+    for(let b=11;b<a;b++)
+      if(a%10 < b%10) // 繰り下がりあり
+        pool.push(makeProblem(`${a} − ${b}`, a-b));
+  return shuffle(pool).slice(0,20);
+}
+
+function genKuku25() {
+  const pool=[];
+  for(let a=2;a<=5;a++)
+    for(let b=2;b<=9;b++)
+      pool.push(makeProblem(`${a} × ${b}`, a*b));
+  const r=[];
+  while(r.length<20) r.push(...shuffle(pool));
+  return shuffle(r).slice(0,20);
+}
+
+function genKukuAll() {
+  const pool=[];
+  for(let a=2;a<=9;a++)
+    for(let b=2;b<=9;b++)
+      pool.push(makeProblem(`${a} × ${b}`, a*b));
+  return shuffle(pool).slice(0,20);
+}
+
+// 九九÷（余りなし）: d×q ÷ d = q（d:2〜9, q:2〜9）
+function genKukuDiv() {
+  const pool=[];
+  for(let d=2;d<=9;d++)
+    for(let q=2;q<=9;q++)
+      pool.push(makeProblem(`${d*q} ÷ ${d}`, q));
+  const r=[];
+  while(r.length<20) r.push(...shuffle(pool));
+  return shuffle(r).slice(0,20);
+}
+
+// 九九÷（余りあり）: (d×q + r) ÷ d = q あまり r (r:1〜d-1)
+function genKukuDivRem() {
+  const pool=[];
+  for(let d=2;d<=9;d++)
+    for(let q=2;q<=9;q++)
+      for(let r=1;r<d;r++){
+        const dividend=d*q+r;
+        pool.push({
+          display: `${dividend} ÷ ${d}`,
+          answer:  `${q} あまり ${r}`,
+          answer2: [q, r]
+        });
+      }
+  return shuffle(pool).slice(0,20);
+}
+
+
+function gen3digitAdd() {
+  const pool=[];
+  for(let a=201;a<=599;a+=17)
+    for(let b=201;b<=599;b+=19)
+      if(a+b>650 && a+b<1000)
+        pool.push(makeProblem(`${a} ＋ ${b}`, a+b));
+  return shuffle(pool).slice(0,12);
+}
+
+function gen3digitSub() {
+  const pool=[];
+  for(let a=301;a<=899;a+=23)
+    for(let b=101;b<a-100;b+=17)
+      if(a%10<b%10 || a%100<b%100)
+        pool.push(makeProblem(`${a} − ${b}`, a-b));
+  return shuffle(pool).slice(0,12);
+}
+
+function gen2x1() {
+  const pool=[];
+  for(let a=12;a<=99;a++)
+    for(let b=2;b<=9;b++)
+      pool.push(makeProblem(`${a} × ${b}`, a*b));
+  return shuffle(pool).slice(0,12);
+}
+
+function genSumProduct() {
+  // 和と積から2数を求める問題
+  // 九九内(1〜9)の組み合わせをベース + 10/12/15は片方が1桁の組み合わせのみ追加
+
+  function makeProb(a, b) {
+    return {
+      display: `和が ${a+b}、積が ${a*b}`,
+      answer: `${a} と ${b}`,
+      answer2: [a, b]
+    };
+  }
+
+  // ── 両方プラス用プール ──────────────────────────────
+  const plusCore = [];
+  // 九九の範囲（1〜9同士）
+  for(let a=1;a<=9;a++)
+    for(let b=a+1;b<=9;b++)
+      plusCore.push([a,b]);
+
+  // 九九外: 10は1桁と組み合わせ自由、12/15は必ずもう一方が1桁
+  const plusExtra = [
+    [1,10],[2,10],[3,10],[4,10],[5,10],
+    [3,12],[4,12],[5,12],[6,12],
+    [3,15],[4,15],[5,15],
+  ];
+
+  // 前半: 九九コアから7問 + 九九外から3問
+  const plusProbs = shuffle(plusCore).slice(0,7).map(([a,b])=>makeProb(a,b))
+    .concat(shuffle(plusExtra).slice(0,3).map(([a,b])=>makeProb(a,b)));
+
+  // ── 片方マイナス（積<0）─────────────────────────────
+  const mixCore = [];
+  for(let a=1;a<=9;a++)
+    for(let b=1;b<=9;b++)
+      if(a!==b) mixCore.push([a,-b]);
+
+  const mixExtra = [
+    [2,-10],[3,-10],[4,-10],
+    [3,-12],[4,-12],
+    [3,-15],[4,-15],
+  ];
+
+  const mixProbs = shuffle(mixCore).slice(0,4).map(([a,b])=>makeProb(a,b))
+    .concat(shuffle(mixExtra).slice(0,2).map(([a,b])=>makeProb(a,b)));
+
+  // ── 両方マイナス（積>0・和<0）──────────────────────
+  const minusCore = [];
+  for(let a=1;a<=9;a++)
+    for(let b=a+1;b<=9;b++)
+      minusCore.push([-a,-b]);
+
+  const minusExtra = [
+    [-3,-10],[-4,-10],[-5,-10],
+    [-3,-12],[-4,-12],
+    [-3,-15],[-4,-15],
+  ];
+
+  const minusProbs = shuffle(minusCore).slice(0,3).map(([a,b])=>makeProb(a,b))
+    .concat(shuffle(minusExtra).slice(0,1).map(([a,b])=>makeProb(a,b)));
+
+  const all = shuffle([...plusProbs, ...mixProbs, ...minusProbs]);
+  return all.slice(0,20);
+}
+
+
+// √n → {coef, rad} (a√b の形)
+function simplifySqrt(n) {
+  let coef=1, rad=n;
+  for(let i=2; i*i<=rad; i++) {
+    while(rad%(i*i)===0) { coef*=i; rad=Math.floor(rad/(i*i)); }
+  }
+  return {coef, rad};
+}
+
+// ════════════════════════════════════════════════════════
+// 新規追加: 問題生成関数
+// ════════════════════════════════════════════════════════
+
+// 3桁MIX（たし算・引き算混合）
+function gen3digitMix() {
+  const add = gen3digitAdd();
+  const sub = gen3digitSub();
+  return shuffle([...add,...sub]).slice(0,12);
+}
+
+// ×5・÷5
+function genTimes5() {
+  const pool=[];
+  for(let a=12;a<=99;a+=1) {
+    if(a%10!==0) pool.push(makeProblem(`${a} × 5`, a*5));
+    if(a%2===0 && a%10!==0) pool.push(makeProblem(`${a} ÷ 2`, a/2));
+  }
+  return shuffle(pool).slice(0,12);
+}
+
+// 35型: (30+a)(30+b)など十の位が同じで一の位の和が10
+function genType35() {
+  const pool=[];
+  // n×n 型: 25×25, 35×35, 45×45, 55×55, 65×65, 75×75, 85×85, 95×95
+  for(let t=2;t<=9;t++) {
+    const a=t*10+5;
+    pool.push(makeProblem(`${a} × ${a}`, a*a));
+  }
+  // 和が10になる組み合わせ: 31×39, 42×48, etc
+  for(let tens=2;tens<=9;tens++) {
+    for(let d=1;d<=4;d++) {
+      const a=tens*10+d; const b=tens*10+(10-d);
+      pool.push(makeProblem(`${a} × ${b}`, a*b));
+    }
+  }
+  return shuffle(pool).slice(0,12);
+}
+
+// ×25・99型
+function genTimes25and99() {
+  const pool=[];
+  // ×25: 4の倍数×25
+  for(let a=4;a<=96;a+=4)
+    pool.push(makeProblem(`${a} × 25`, a*25));
+  // 99型: a×99 = a×100 - a
+  for(let a=12;a<=99;a++)
+    pool.push(makeProblem(`${a} × 99`, a*99));
+  return shuffle(pool).slice(0,12);
+}
+
+// 素因数分解2因数版: p×q形式のみ → 2ボックス入力
+// 問題: "12" → 答え: [2, 6] (但し12=2²×3なので除外、代わりに純粋な2素因数のみ)
+function genPrimeFactorize2() {
+  function isPrime(n){if(n<2)return false;for(let i=2;i*i<=n;i++)if(n%i===0)return false;return true;}
+  const pool=[];
+  // p² 型 (p=2,3,5,7,11,13)
+  [2,3,5,7,11,13].forEach(p=>pool.push({n:p*p,a:[p,p]}));
+  // p×q 型 (p<q, 両方素数, 積が100以下)
+  const primes=[2,3,5,7,11,13,17,19,23,29,31,37,41,43,47];
+  for(let i=0;i<primes.length;i++)
+    for(let j=i+1;j<primes.length;j++){
+      const n=primes[i]*primes[j];
+      if(n>100) break;
+      pool.push({n, a:[primes[i],primes[j]]});
+    }
+  return shuffle(pool).slice(0,12).map(({n,a})=>({
+    display:`${n}　＝　□ × □`,
+    answer:`${a[0]} × ${a[1]}`,
+    answer2:[a[0],a[1]]
+  }));
+}
+
+// 素因数分解（プリントから移植）
+function genPrimeFactorize() {
+  function factorize(n) {
+    const f=[]; let d=2;
+    while(d*d<=n){ while(n%d===0){f.push(d);n/=d;} d++; }
+    if(n>1) f.push(n); return f;
+  }
+  const easy  = [];
+  const mid   = [];
+  const hard  = [];
+  for(let n=4;n<=100;n++){
+    const f=factorize(n);
+    if(f.length===2 && Math.max(...f)<=11) easy.push([n,f]);
+    else if(f.length===3 && Math.max(...f)<=11) mid.push([n,f]);
+    else if(f.length===4 && Math.max(...f)<=7)  hard.push([n,f]);
+  }
+  const probs=[];
+  shuffle(easy).slice(0,4).forEach(([n,f])=>probs.push(makeProblem(`${n}`, f.join(' × '))));
+  shuffle(mid) .slice(0,5).forEach(([n,f])=>probs.push(makeProblem(`${n}`, f.join(' × '))));
+  shuffle(hard).slice(0,3).forEach(([n,f])=>probs.push(makeProblem(`${n}`, f.join(' × '))));
+  return shuffle(probs).slice(0,12);
+}
+
+// かけ算MIX（2桁×1桁・×5・35型・×25・99型の混合）
+function genKakesMix() {
+  const p1 = gen2x1().slice(0,3);
+  const p2 = genTimes5().slice(0,3);
+  const p3 = genType35().slice(0,2);
+  const p4 = genTimes25and99().slice(0,2);
+  return shuffle([...p1,...p2,...p3,...p4]).slice(0,12);
+}
+
+// ── 分数生成（プリント相当・シンプル版）─────────────────
+function fracStr(n, d) {
+  if(n===0) return "0";
+  if(d===1) return String(n);
+  if(n<0||n>d) {
+    const w=Math.floor(n/d); const r=n%d;
+    if(r===0) return String(w);
+    return `${w}と${r}/${d}`;
+  }
+  return `${n}/${d}`;
+}
+
+
+// ════════════════════════════════════════════════════════
+// 分数ジェネレーター（リニューアル版）
+// ════════════════════════════════════════════════════════
+
+function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){let t=b;b=a%b;a=t;}return a;}
+function lcm(a,b){return a*b/gcd(a,b);}
+
+// 素数リスト（2桁の素数は極力使わない）
+const SMALL_DENOMS = [2,3,4,5,6,7,8,9];
+
+// 既約分数チェック
+function isIrr(n,d){return gcd(Math.abs(n),d)===1;}
+
+// ── 2級A: 同分母真分数 + 真分数（繰り上がり必須・答えは帯分数） ──
+// inputType: fracMixed  答え形式: "Nと分子/分母"
+function gen2kyu1() {
+  // 同分母真分数＋真分数（繰り上がり必須・答えは帯分数・既約）
+  // 分母: 5,7,8,9,11,13 から各1〜2問確実に出題
+  const denoms=[5,7,8,9,11,13];
+  const probs=[];
+  for(const d of denoms){
+    const found=[];
+    for(let n1=1;n1<d;n1++){
+      for(let n2=n1;n2<d;n2++){
+        if(n1+n2<=d) continue;
+        const r=(n1+n2)%d;
+        if(r===0||!isIrr(r,d)) continue;
+        const w=Math.floor((n1+n2)/d);
+        found.push({display:`${n1}/${d}　＋　${n2}/${d}`, answer:`${w}と${r}/${d}`});
+      }
+    }
+    // 各分母から最大2問
+    shuffle(found).slice(0,2).forEach(p=>probs.push(p));
+  }
+  return shuffle(probs).slice(0,10);
+}
+
+function gen2kyu2() {
+  // 同分母帯分数＋帯分数（繰り上がり必須・答えは帯分数・既約）
+  const denoms=[5,7,8,9,11,13];
+  const probs=[];
+  for(const d of denoms){
+    const found=[];
+    for(let i1=1;i1<=3;i1++) for(let i2=1;i2<=3;i2++){
+      for(let n1=1;n1<d;n1++) for(let n2=n1;n2<d;n2++){
+        if(n1+n2<=d) continue;
+        const total=(i1+i2)*d+n1+n2;
+        const w=Math.floor(total/d); const r=total%d;
+        if(r===0||!isIrr(r,d)) continue;
+        found.push({
+          display:`${i1}と${n1}/${d}　＋　${i2}と${n2}/${d}`,
+          answer:`${w}と${r}/${d}`
+        });
+      }
+    }
+    shuffle(found).slice(0,2).forEach(p=>probs.push(p));
+  }
+  return shuffle(probs).slice(0,10);
+}
+
+function gen2kyu3() {
+  // 同分母帯分数−帯分数（答えは帯分数・既約）
+  const denoms=[5,7,8,9,11,13];
+  const probs=[];
+  for(const d of denoms){
+    const found=[];
+    for(let i1=2;i1<=6;i1++) for(let i2=1;i2<i1;i2++){
+      for(let n1=1;n1<d;n1++) for(let n2=1;n2<d;n2++){
+        const t1=i1*d+n1; const t2=i2*d+n2;
+        const diff=t1-t2; if(diff<=0) continue;
+        const w=Math.floor(diff/d); const r=diff%d;
+        if(w===0||r===0||!isIrr(r,d)) continue;
+        found.push({
+          display:`${i1}と${n1}/${d}　−　${i2}と${n2}/${d}`,
+          answer:`${w}と${r}/${d}`
+        });
+      }
+    }
+    shuffle(found).slice(0,2).forEach(p=>probs.push(p));
+  }
+  return shuffle(probs).slice(0,10);
+}
+
+// ── 2級D// ── 2級D: 異分母（真分数のみ・答えも真分数か仮分数） ──
+// inputType: frac  分母は1桁優先・2桁素数は極力避ける
+function gen2kyu4() {
+  const probs=[];
+  const denPairs=[
+    [2,3],[2,5],[3,4],[3,5],[4,5],[2,7],[3,7],[4,6],[5,6],[2,9],[4,9],[5,7]
+  ];
+  for(const [d1,d2] of denPairs){
+    for(let t=0;t<20;t++){
+      const op=Math.random()>0.5?'＋':'−';
+      const n1=rnd(1,d1-1); const n2=rnd(1,d2-1);
+      const L=lcm(d1,d2);
+      const total=op==='＋'?n1*(L/d1)+n2*(L/d2):n1*(L/d1)-n2*(L/d2);
+      if(total<=0) continue;
+      const g=gcd(Math.abs(total),L);
+      const rn=total/g; const rd=L/g;
+      if(rd===1) continue; // 整数になる→スキップ
+      const ans=rn+'/'+rd;
+      probs.push({
+        display:`${n1}/${d1}　${op}　${n2}/${d2}`,
+        answer:ans
+      });
+      if(probs.length>=10) return shuffle(probs).slice(0,10);
+    }
+  }
+  return shuffle(probs).slice(0,10);
+}
+
+// ── 1級A: 約分（答えは真分数・既約） ──
+// inputType: frac
+function gen1kyu1() {
+  const pairs=[
+    [4,6],[6,9],[4,8],[6,8],[9,12],[8,12],[6,10],[4,10],[9,15],[8,10],
+    [6,15],[12,16],[10,15],[9,21],[8,20],[15,20],[12,18],[10,25],[14,21],[16,20],
+    [15,25],[18,24],[20,28],[10,30],[12,20],[14,35],[16,24],[21,28],[15,35],[18,27]
+  ];
+  return shuffle(pairs).slice(0,10).map(([n,d])=>{
+    const g=gcd(n,d);
+    return {display:`${n}/${d}`, answer:`${n/g}/${d/g}`};
+  });
+}
+
+// ── 1級B: 整数×分数＝整数 ──
+function gen1kyuB() {
+  const pool=[];
+  for(let d=2;d<=12;d++){
+    for(let n=2;n<d;n++){              // n=1 は除外
+      if(gcd(n,d)!==1) continue;
+      for(let mult=2;mult<=9;mult++){  // mult=1(整数=分母)は除外
+        const k=d*mult;
+        const ans=k*n/d;
+        if(ans<2||ans>81) continue;
+        pool.push(makeProblem(`${k} × ${n}/${d}`, ans));
+      }
+    }
+  }
+  return shuffle(pool).slice(0,10);
+}
+
+// ── 1級B: 分数かけ算（約分1箇所・仮分数OK・既約）──
+// 6,7,9での約分含む・n1は分母×2未満まで（仮分数OK）
+function gen1kyu2() {
+  const pairs=[];
+  const dens=[2,3,4,5,6,7,8,9];
+  for(const d1 of dens) for(let n1=1;n1<d1*2;n1++){
+    if(gcd(n1,d1)!==1) continue;
+    for(const d2 of dens) for(let n2=1;n2<d2*2;n2++){
+      if(gcd(n2,d2)!==1) continue;
+      const g12=gcd(n1,d2); const g21=gcd(n2,d1);
+      if(!((g12>1)!==(g21>1))) continue;
+      const rn=n1*n2; const rd=d1*d2;
+      const g=gcd(rn,rd); const fn=rn/g; const fd=rd/g;
+      if(fd>30||fn>50) continue;
+      pairs.push({display:`${n1}/${d1} × ${n2}/${d2}`, answer:fd===1?String(fn):`${fn}/${fd}`});
+    }
+  }
+  return shuffle(pairs).slice(0,10);
+}
+
+// ── 1級C: 分数かけ算（約分2〜3回・答えは仮分数か整数） ──
+// inputType: frac  両方で約分できるもの
+function gen1kyu3() {
+  const probs=[];
+  for(let d1=2;d1<=12;d1++) for(let n1=1;n1<=d1;n1++){
+    if(gcd(n1,d1)!==1) continue;
+    for(let d2=2;d2<=12;d2++) for(let n2=1;n2<=d2;n2++){
+      if(gcd(n2,d2)!==1) continue;
+      const g12=gcd(n1,d2); const g21=gcd(n2,d1);
+      if(g12<=1||g21<=1) continue; // 両方で約分できるもの
+      const rn=n1*n2; const rd=d1*d2;
+      const g=gcd(rn,rd); const fn=rn/g; const fd=rd/g;
+      if(fd>20||fn>20) continue;
+      probs.push({display:`${n1}/${d1} × ${n2}/${d2}`, answer:fd===1?String(fn):`${fn}/${fd}`});
+    }
+  }
+  return shuffle(probs).slice(0,10);
+}
+
+// ── 1級C: 分数かけ算（約分2箇所・仮分数OK・既約）──
+// 6,7,9での約分含む
+function gen1kyu3() {
+  const pairs=[];
+  const dens=[2,3,4,5,6,7,8,9];
+  for(const d1 of dens) for(let n1=1;n1<d1*2;n1++){
+    if(gcd(n1,d1)!==1) continue;
+    for(const d2 of dens) for(let n2=1;n2<d2*2;n2++){
+      if(gcd(n2,d2)!==1) continue;
+      const g12=gcd(n1,d2); const g21=gcd(n2,d1);
+      if(g12<=1||g21<=1) continue;
+      const rn=n1*n2; const rd=d1*d2;
+      const g=gcd(rn,rd); const fn=rn/g; const fd=rd/g;
+      if(fd>30||fn>50) continue;
+      pairs.push({display:`${n1}/${d1} × ${n2}/${d2}`, answer:fd===1?String(fn):`${fn}/${fd}`});
+    }
+  }
+  return shuffle(pairs).slice(0,10);
+}
+
+// ── 1級D: 3分数かけ算（答えは仮分数か整数・既約）──
+// 仮分数OK・6,7,9での約分含む
+function gen1kyu4() {
+  const probs=[];
+  const dens=[2,3,4,5,6,7,8,9];
+  for(let t=0;t<800;t++){
+    const d1=dens[rnd(0,dens.length-1)];
+    const d2=dens[rnd(0,dens.length-1)];
+    const d3=dens[rnd(0,dens.length-1)];
+    const n1=rnd(1,d1*2-1); const n2=rnd(1,d2*2-1); const n3=rnd(1,d3*2-1);
+    if(!isIrr(n1,d1)||!isIrr(n2,d2)||!isIrr(n3,d3)) continue;
+    // 最低1箇所は約分が起きること
+    const g12=gcd(n1,d2); const g13=gcd(n1,d3);
+    const g21=gcd(n2,d1); const g23=gcd(n2,d3);
+    const g31=gcd(n3,d1); const g32=gcd(n3,d2);
+    const anyCancel=g12>1||g13>1||g21>1||g23>1||g31>1||g32>1;
+    if(!anyCancel) continue;
+    const rn=n1*n2*n3; const rd=d1*d2*d3;
+    const g=gcd(rn,rd); const fn=rn/g; const fd=rd/g;
+    if(fn>99||fd>99) continue;
+    const ans=fd===1?String(fn):`${fn}/${fd}`;
+    probs.push({display:`${n1}/${d1} × ${n2}/${d2} × ${n3}/${d3}`, answer:ans});
+    if(probs.length>=10) break;
+  }
+  return probs.slice(0,10);
+}
+
+
+function genLinearEq() {
+  const probs=[];
+  for(let t=0;t<30;t++){
+    const x=rnd(-9,9); if(x===0) continue;
+    const a=rnd(2,9); const c=rnd(1,7); if(a===c) continue;
+    const d=rnd(-15,15); const b=(c-a)*x+d;
+    const lhs=`${a}x${b>=0?'+'+b:b}`; const rhs=c===0?String(d):`${c}x${d>=0?'+'+d:d}`;
+    probs.push(makeProblem(lhs+'='+rhs, 'x='+x));
+  }
+  return shuffle(probs).slice(0,10);
+}
+
+function genProportion() {
+  const pool=[[2,3],[3,4],[2,5],[3,5],[4,5],[3,7],[5,6],[2,7]];
+  const probs=[];
+  pool.forEach(([a,b])=>{
+    const k=rnd(2,8); const c=a*k; const x=b*k;
+    probs.push(makeProblem(`${a}:${b}=${c}:x`, 'x='+x));
+  });
+  return shuffle(probs).slice(0,10);
+}
+
+function genSimultaneous() {
+  const probs=[];
+  for(let t=0;t<50;t++){
+    const x=rnd(-6,6); const y=rnd(-6,6);
+    if(x===0||y===0) continue;
+    const a1=rnd(2,5); let b1=rnd(2,5); if(a1===b1) b1++;
+    const a2=rnd(1,3); const b2=rnd(1,3);
+    const c1=a1*x+b1*y; const c2=a2*x+b2*y;
+    probs.push(makeProblem(
+      `${a1}x+${b1}y=${c1} / ${a2}x+${b2}y=${c2}`.replace(/\+-/g,'-'),
+      `x=${x},y=${y}`
+    ));
+    if(probs.length>=8) break;
+  }
+  return probs;
+}
+
+function genSimultaneousSub() {
+  const probs=[];
+  for(let t=0;t<50;t++){
+    const x=rnd(-5,5); if(x===0) continue;
+    const a=rnd(2,4); const b=rnd(-5,5);
+    const y=a*x+b; const c=rnd(2,5); const d=c*x+y;
+    probs.push(makeProblem(`y=${a}x${b>=0?'+'+b:b}, ${c}x+y=${d}`.replace(/\+-/g,'-'), `x=${x},y=${y}`));
+    if(probs.length>=8) break;
+  }
+  return probs;
+}
+
+function genSqPlus() {
+  return shuffle([1,2,3,4,5,6,7,8,9]).slice(0,10).map(a=>{
+    const lhs=`(x+${a})²`;
+    const ans=`x²+${2*a}x+${a*a}`;
+    return makeProblem(lhs, ans);
+  });
+}
+
+function genProduct() {
+  const probs=[];
+  for(let t=0;t<200;t++){
+    const a=rnd(-9,9); const b=rnd(-9,9);
+    if(a===0||b===0||a===b||a+b===0) continue;
+    const s=a+b; const p=a*b;
+    const fmt=n=>n>0?`+${n}`:String(n);
+    let ans=`x²${s!==0?(s===1?'+x':s===-1?'-x':fmt(s)+'x'):''}${p!==0?fmt(p):''}`;
+    const sa=a>0?`+${a}`:String(a); const sb=b>0?`+${b}`:String(b);
+    probs.push(makeProblem(`(x${sa})(x${sb})`, ans));
+    if(probs.length>=10) break;
+  }
+  return probs;
+}
+
+function genDiffSq() {
+  return shuffle([1,2,3,4,5,6,7,8,9]).slice(0,10).map(a=>
+    makeProblem(`(x+${a})(x-${a})`, `x²-${a*a}`)
+  );
+}
+
+function genExpandMix() {
+  const a_pool=shuffle([...Array(9)].map((_,i)=>i+1));
+  return a_pool.slice(0,10).map(a=>{
+    const t=rnd(0,2);
+    if(t===0) return makeProblem(`(x+${a})²`, `x²+${2*a}x+${a*a}`);
+    if(t===1) return makeProblem(`(x-${a})²`, `x²-${2*a}x+${a*a}`);
+    return makeProblem(`(x+${a})(x-${a})`, `x²-${a*a}`);
+  });
+}
+
+function genFactorize() {
+  const probs=[];
+  for(let t=0;t<200;t++){
+    const a=rnd(-8,8); const b=rnd(-8,8);
+    if(a===0||b===0) continue;
+    const s=a+b; const p=a*b;
+    const fmt=n=>n>0?`+${n}`:n<0?String(n):'';
+    const prob=`x²${fmt(s)}x${fmt(p)}`.replace(/\+-/g,'-');
+    const sa=a>0?`+${a}`:String(a); const sb=b>0?`+${b}`:String(b);
+    const ans=`(x${sa})(x${sb})`.replace(/\+-/g,'-');
+    probs.push(makeProblem(prob, ans));
+    if(probs.length>=10) break;
+  }
+  return probs;
+}
+
+function genSqrtDiv() {
+  function gcd(a,b){return b===0?a:gcd(b,a%b);}
+  const pairs=[];
+  for(let b=2;b<=13;b++){
+    const {coef,rad}=simplifySqrt(b);
+    if(coef>1) continue;
+    for(let k=2;k<=9;k++) pairs.push({a:k*b,b,ans:`${k}√${b}`});
+  }
+  return shuffle(pairs).slice(0,10).map(p=>makeProblem(`${p.a}/√${p.b}`, p.ans));
+}
+
+function genSqrtSq() {
+  const pool=[];
+  for(const a of [2,3,5,6,7,10,11,13,15]) for(const b of [1,2,3,4,5])
+    pool.push({lhs:`(√${a}+${b})²`, ans:`${a+b*b}+${2*b}√${a}`});
+  for(const a of [2,3,5,6,7,10,11,13,15]) for(const b of [1,2,3])
+    pool.push({lhs:`(√${a}-${b})²`, ans:`${a+b*b}-${2*b}√${a}`});
+  return shuffle(pool).slice(0,10).map(p=>makeProblem(p.lhs, p.ans));
+}
+
+function genSqrtAdvanced() {
+  const pool=[];
+  for(const a of [5,6,7,10,11,13,15]) for(const b of [1,2,3])
+    pool.push(makeProblem(`(√${a}+${b})(√${a}-${b})`, String(a-b*b)));
+  for(const a of [2,3,5]) for(const c of [3,5,7]){
+    if(a>=c) continue;
+    const {coef,rad}=simplifySqrt(a*c);
+    pool.push(makeProblem(`(√${a}+√${c})²`, `${a+c}+${2*coef}√${rad}`));
+  }
+  return shuffle(pool).slice(0,10);
+}
+
+function genLinearFunc() {
+  const probs=[];
+  for(let t=0;t<50;t++){
+    const a=rnd(-4,4); if(a===0) continue;
+    const b=rnd(-8,8);
+    const x1=rnd(-5,0); const x2=rnd(1,5);
+    const y1=a*x1+b; const y2=a*x2+b;
+    probs.push(makeProblem(
+      `2点(${x1},${y1})(${x2},${y2})を通る直線`,
+      `y=${a}x${b>0?'+'+b:b<0?b:''}`.replace(/\+-/g,'-').replace(/\+0$/,'')
+    ));
+    if(probs.length>=8) break;
+  }
+  return probs;
+}
+
+
+
+function simplifySqrt(n) {
+  // √n を a√b に変換。返値: {coef:a, rad:b}
+  let coef=1, rad=n;
+  for(let i=2; i*i<=rad; i++) {
+    while(rad%(i*i)===0) { coef*=i; rad=Math.floor(rad/(i*i)); }
+  }
+  return {coef, rad};
+}
+
+function genSqrtTransform() {
+  // a√b に変形できる数（8〜100・b≤15・a>1）
+  const pool = [];
+  for(let n=8; n<=100; n++) {
+    const {coef,rad} = simplifySqrt(n);
+    if(coef>1 && rad>1 && rad<=15) pool.push({n,coef,rad});
+  }
+  return shuffle(pool).slice(0,20).map(({n,coef,rad})=>({
+    display: `√${n}`,
+    answer:  coef===1 ? `√${rad}` : `${coef}√${rad}`,
+    answer2: [coef, rad],   // [係数, √の中]
+    sqrtForm: true
+  }));
+}
+
+// ════════════════════════════════════════════════════════
+// 四段B: ルートのかけ算  √a × √b = c√d
+// ════════════════════════════════════════════════════════
+
+function genSqrtMult() {
+  function isPerfectSq(n){ const r=Math.round(Math.sqrt(n)); return r*r===n; }
+
+  const pool = [];
+  for(let a=2; a<=19; a++) {
+    for(let b=a+1; b<=19; b++) {
+      if(isPerfectSq(a) || isPerfectSq(b)) continue;
+      const n = a*b;
+      const {coef,rad} = simplifySqrt(n);
+      if(coef>1 && rad>1) pool.push({a,b,coef,rad});
+    }
+  }
+  return shuffle(pool).slice(0,20).map(({a,b,coef,rad})=>({
+    display: `√${a} × √${b}`,
+    answer:  `${coef}√${rad}`,
+    answer2: [coef, rad],
+    sqrtForm: true
+  }));
+}
+
+// ════════════════════════════════════════════════════════
+// 正負の数: 2項の和  (-15〜+15)
+// ════════════════════════════════════════════════════════
+
+function genSignedSum2() {
+  const pool = [];
+  for(let a=-15; a<=15; a++) {
+    if(a===0) continue;
+    for(let b=-15; b<=15; b++) {
+      if(b===0) continue;
+      if(a===b) continue;
+      if(a>0 && b>0) continue; // 両方プラスは9級でカバー
+      const s=a+b;
+      if(s<-20||s>20) continue; // 答えの範囲制限
+      pool.push([a,b]);
+    }
+  }
+  return shuffle(pool).slice(0,20).map(([a,b])=>({
+    display: `${a}　　　${b}`,   // 全角スペースで間隔を空ける
+    answer:  String(a+b)
+  }));
+}
+
+// ════════════════════════════════════════════════════════
+// 正負の数: 3項の和  (-15〜+15)
+// ════════════════════════════════════════════════════════
+
+function genSignedSum3() {
+  const pool = [];
+  for(let a=-12; a<=12; a++) {
+    if(a===0) continue;
+    for(let b=-12; b<=12; b++) {
+      if(b===0) continue;
+      for(let c=-12; c<=12; c++) {
+        if(c===0) continue;
+        // 最低1つはマイナス
+        if(a>0 && b>0 && c>0) continue;
+        // 答えが-20〜+20に収まるもの
+        const s=a+b+c;
+        if(s<-20||s>20) continue;
+        pool.push([a,b,c]);
+      }
+    }
+  }
+  return shuffle(pool).slice(0,20).map(([a,b,c])=>({
+    display: `${a}　　　${b}　　　${c}`,
+    answer:  String(a+b+c)
+  }));
+}
+
+
+// ════════════════════════════════════════════════════════
+// 新規追加ジェネレーター
+// ════════════════════════════════════════════════════════
+
+// 分配法則暗算: (100±a)×b
+function genDistributive() {
+  const pool=[];
+  for(let b=2;b<=9;b++) {
+    for(let a=1;a<=9;a++) {
+      pool.push(makeProblem(`${100+a} × ${b}`, (100+a)*b));
+      pool.push(makeProblem(`${100-a} × ${b}`, (100-a)*b));
+    }
+  }
+  return shuffle(pool).slice(0,12);
+}
+
+// 素因数の積 → 元の整数
+function genFactorProduct() {
+  function factorize(n){const f=[];let d=2;while(d*d<=n){while(n%d===0){f.push(d);n/=d;}d++;}if(n>1)f.push(n);return f;}
+  const pool=[];
+  for(let n=4;n<=100;n++){
+    const f=factorize(n);
+    if(f.length>=2&&f.length<=4&&Math.max(...f)<=11)
+      pool.push(makeProblem(f.join(' × '), String(n)));
+  }
+  return shuffle(pool).slice(0,12);
+}
+
+// 和差算 → 2数（答えが整数になる和と差）
+function genSumDiff() {
+  function makeProb(sum, diff) {
+    const big=(sum+diff)/2; const small=(sum-diff)/2;
+    return { display:`和が ${sum}、差が ${diff}`,
+             answer:`${big} と ${small}`, answer2:[big,small] };
+  }
+  const pool=[];
+  // 和と差が両方偶数
+  for(let s=14;s<=50;s+=2)
+    for(let d=2;d<=Math.min(s-2,20);d+=2)
+      if((s-d)/2>=10) pool.push(makeProb(s,d));
+  // 和と差が両方奇数
+  for(let s=15;s<=49;s+=2)
+    for(let d=1;d<=Math.min(s-2,19);d+=2)
+      if((s-d)/2>=10) pool.push(makeProb(s,d));
+  return shuffle(pool).slice(0,20);
+}
+
+// 正負のかけ算
+function genSignedMult() {
+  const pool=[];
+  for(let a=-9;a<=9;a++) for(let b=-9;b<=9;b++) {
+    if(a===0||b===0) continue;
+    if(a>0&&b>0) continue; // 両方プラスは九九でカバー
+    pool.push(makeProblem(`（${a}）×（${b}）`, String(a*b)));
+  }
+  return shuffle(pool).slice(0,20);
+}
+
+// 正負のわり算
+function genSignedDiv() {
+  const pool=[];
+  for(let a=2;a<=9;a++) for(let b=2;b<=9;b++) {
+    const prod=a*b;
+    pool.push(makeProblem(`${-prod} ÷ ${a}`, String(-b)));
+    pool.push(makeProblem(`${prod} ÷ ${-a}`, String(-b)));
+    pool.push(makeProblem(`${-prod} ÷ ${-a}`, String(b)));
+  }
+  return shuffle(pool).slice(0,20);
+}
+
+// 平方数（11〜20・21・25・31・32・35・45）
+function genSquares() {
+  const targets=[11,12,13,14,15,16,17,18,19,20,21,25,31,32,35,45];
+  const pool=[];
+  targets.forEach(n=>pool.push(makeProblem(`${n}²`, String(n*n))));
+  const r=[];
+  while(r.length<20) r.push(...shuffle(pool));
+  return shuffle(r).slice(0,20);
+}
+
+// 平方根（平方数の逆）
+function genSqrtInverse() {
+  const targets=[11,12,13,14,15,16,17,18,19,20,21,25,31,32,35,45];
+  const pool=[];
+  targets.forEach(n=>pool.push(makeProblem(`√${n*n}`, String(n))));
+  const r=[];
+  while(r.length<20) r.push(...shuffle(pool));
+  return shuffle(r).slice(0,20);
+}
+
+// √の2乗展開: (√a ± √b)² = (a+b) ±2√(ab)
+function genSqrtExpand() {
+  // ab が簡約化できるペア（√(ab)=k√m になる）
+  const pairs=[];
+  const safe=[2,3,5,6,7,10,11,13,15];
+  for(const a of safe) for(const b of safe) {
+    if(a>=b) continue;
+    const ab=a*b;
+    const {coef:k, rad:m}=simplifySqrt(ab);
+    if(k<1) continue; // 完全平方数なら除外
+    for(const sign of ['+','-']) {
+      pairs.push({
+        a, b, sign, k, m,
+        display: `（√${a} ${sign==='+'?'＋':'−'} √${b}）²`,
+        answer:  `${a+b}${sign}${2*k}√${m}`,
+        answer4: { int:a+b, sign, coef:2*k, rad:m }
+      });
+    }
+  }
+  return shuffle(pairs).slice(0,10).map(p=>({
+    display: p.display,
+    answer:  p.answer,
+    answer4: p.answer4
+  }));
+}
+
+// 連立方程式（加減法）→ 2ボックス整数
+function genSimultaneous() {
+  const probs=[];
+  for(let t=0;t<200;t++){
+    const x=rnd(-6,6); const y=rnd(-6,6);
+    if(x===0||y===0) continue;
+    const a1=rnd(2,5); const b1=rnd(2,5);
+    const a2=rnd(1,4); const b2=rnd(1,4);
+    if(a1/b1===a2/b2) continue; // 係数比が同じだと解なし
+    const c1=a1*x+b1*y; const c2=a2*x+b2*y;
+    probs.push({
+      display:`${a1}x+${b1}y=${c1}  /  ${a2}x+${b2}y=${c2}`.replace(/\+-/g,'-'),
+      answer:`x=${x},y=${y}`, answer2:[x,y]
+    });
+    if(probs.length>=8) break;
+  }
+  return probs;
+}
+
+// 連立方程式（代入法）→ 2ボックス整数
+function genSimultaneousSub() {
+  const probs=[];
+  for(let t=0;t<200;t++){
+    const x=rnd(-5,5); if(x===0) continue;
+    const a=rnd(2,4); const b=rnd(-5,5);
+    const y=a*x+b; if(Math.abs(y)>10) continue;
+    const c=rnd(2,5); const d=c*x+y;
+    probs.push({
+      display:`y=${a}x${b>=0?'+'+b:b}  /  ${c}x+y=${d}`.replace(/\+-/g,'-'),
+      answer:`x=${x},y=${y}`, answer2:[x,y]
+    });
+    if(probs.length>=8) break;
+  }
+  return probs;
+}
+
+
+// ════════════════════════════════════════════════════════
+// 4級用ジェネレーター
+// ════════════════════════════════════════════════════════
+
+// 2桁×2（繰り上がりあり・なし混在）
+function genTimes2() {
+  const pool=[];
+  for(let a=12;a<=99;a++) pool.push(makeProblem(`${a} × 2`, a*2));
+  return shuffle(pool).slice(0,12);
+}
+
+// 2・3桁÷2（答えが2桁の整数）
+function genDiv2() {
+  const pool=[];
+  for(let ans=10;ans<=99;ans++) pool.push(makeProblem(`${ans*2} ÷ 2`, ans));
+  return shuffle(pool).slice(0,12);
+}
+
+// 2桁×5
+function genTimes5only() {
+  const pool=[];
+  for(let a=12;a<=99;a++) pool.push(makeProblem(`${a} × 5`, a*5));
+  return shuffle(pool).slice(0,12);
+}
+
+// 2・3桁÷5（答えが2桁の整数）
+function genDiv5() {
+  const pool=[];
+  for(let ans=10;ans<=99;ans++) pool.push(makeProblem(`${ans*5} ÷ 5`, ans));
+  return shuffle(pool).slice(0,12);
+}
+
+// 2・3桁÷1桁（答えが2桁の整数）
+function genDiv1digit() {
+  const pool=[];
+  for(let d=2;d<=9;d++)
+    for(let ans=10;ans<=99;ans++)
+      if((ans*d)<=999) pool.push(makeProblem(`${ans*d} ÷ ${d}`, ans));
+  return shuffle(pool).slice(0,12);
+}
+
+// ════════════════════════════════════════════════════════
+// 3級用ジェネレーター
+// ════════════════════════════════════════════════════════
+
+// ○5型: n5 × n5（同じ数同士のみ・B案）
+// 15²〜95²の9種。9問だけなので繰り返してシャッフル
+function genType_O5() {
+  const base=[];
+  for(let a=1;a<=9;a++){
+    const n=a*10+5;
+    base.push(makeProblem(`${n} × ${n}`, n*n));
+  }
+  const pool=[...base,...base];  // 18個に増やしてシャッフル
+  return shuffle(pool).slice(0,12);
+}
+
+// ×5（2の倍数12〜24）/ ×25（4の倍数12〜48）/ ×125（8の倍数16〜96）MIX
+function genMultSpecial() {
+  const pool=[];
+  // ×5: 2の倍数
+  for(let a=12;a<=24;a+=2) pool.push(makeProblem(`${a} × 5`, a*5));
+  // ×25: 4の倍数
+  for(let a=12;a<=48;a+=4) pool.push(makeProblem(`${a} × 25`, a*25));
+  // ×125: 8の倍数
+  for(let a=16;a<=96;a+=8) pool.push(makeProblem(`${a} × 125`, a*125));
+  return shuffle(pool).slice(0,12);
+}
+
+// ×99型: 11〜49の2桁×99
+function genTimes99() {
+  const pool=[];
+  for(let a=11;a<=49;a++) pool.push(makeProblem(`${a} × 99`, a*99));
+  return shuffle(pool).slice(0,12);
+}
+
+// 2桁×11
+function genTimes11() {
+  const pool=[];
+  for(let a=11;a<=99;a++) pool.push(makeProblem(`${a} × 11`, a*11));
+  return shuffle(pool).slice(0,12);
+}
+
+// 工夫MIX（3A〜3D: ○5型・×特殊・×99・×11の混合）
+function genKakuMix3() {
+  const p1=genType_O5().slice(0,3);
+  const p2=genMultSpecial().slice(0,3);
+  const p3=genTimes99().slice(0,3);
+  const p4=genTimes11().slice(0,3);
+  return shuffle([...p1,...p2,...p3,...p4]).slice(0,12);
+}
+
+// ════════════════════════════════════════════════════════
+
+// 一次関数（傾き・切片の入力）
+function genLinearFuncInput() {
+  // 傾き: ±1, ±2, ±3, ±1/2, ±1/3 から選ぶ
+  const slopes=[
+    {sn:1,sd:1},{sn:2,sd:1},{sn:3,sd:1},
+    {sn:-1,sd:1},{sn:-2,sd:1},{sn:-3,sd:1},
+    {sn:1,sd:2},{sn:1,sd:3},{sn:-1,sd:2},{sn:-1,sd:3}
+  ];
+  const probs=[];
+  for(let t=0;t<200;t++){
+    const s=slopes[rnd(0,slopes.length-1)];
+    const b=rnd(-9,9);
+    const x1=rnd(-6,-1); const x2=rnd(1,6);  // x=0 は除外（切片が直読できるため）
+    const y1=s.sn*x1/s.sd+b; const y2=s.sn*x2/s.sd+b;
+    if(!Number.isInteger(y1)||!Number.isInteger(y2)) continue;
+    if(Math.abs(y1)>15||Math.abs(y2)>15) continue;
+    // 傾きの表示文字列
+    const sDisp=s.sn===1?'1':s.sn===-1?'-1':
+                s.sd===1?String(s.sn):`${s.sn}/${s.sd}`;
+    // 答え文字列（表示用）
+    const sShow=s.sn===1?'':s.sn===-1?'-':s.sd===1?`${s.sn}`:`${s.sn}/${s.sd}`;
+    const ans=`y=${sShow}x${b>0?'+'+b:b<0?b:''}`.replace(/\+-/g,'-').replace(/x$/, 'x+0');
+    // 切片0は +0 ではなく単純に省略（表示のみ）
+    const ansClean=`y=${sShow}x${b!==0?(b>0?'+'+b:b):''}`;
+    probs.push({
+      display:`2点（${x1}, ${y1}）と（${x2}, ${y2}）を通る直線`,
+      answer:ansClean,
+      answerLF:{ sn:s.sn, sd:s.sd, b }
+    });
+    if(probs.length>=8) break;
+  }
+  return probs;
+}
+
+// 名人: 段位全問題MIX
+// ════════════════════════════════════════════════════════
+function genMeijin() {
+  // 各段位ジェネレーターとinputTypeの対応
+  const sets=[
+    {fn:genSignedSum2,       t:''},
+    {fn:genSignedSum3,       t:''},
+    {fn:genSignedMult,       t:''},
+    {fn:genSignedDiv,        t:''},
+    {fn:genSquares,          t:''},
+    {fn:genSqrtInverse,      t:''},
+    {fn:genSimultaneous,     t:'two',       lb:['x =','y =']},
+    {fn:genSimultaneousSub,  t:'two',       lb:['x =','y =']},
+    {fn:genSqrtTransform,    t:'sqrt',      lb:['係数','√の中']},
+    {fn:genSqrtMult,         t:'sqrt',      lb:['係数','√の中']},
+    {fn:genSqrtExpand,       t:'sqrtExpand'},
+    {fn:genLinearFuncInput,  t:'linearFunc'},
+  ];
+  const all=[];
+  sets.forEach(s=>{
+    // 各ジェネレーターから均等に2問
+    const probs=s.fn().slice(0,2);
+    probs.forEach(p=>all.push({...p, inputType:s.t, inputLabels:s.lb||null}));
+  });
+  return shuffle(all).slice(0,20);
+}
+
+
+// ════════════════════════════════════════════════════════
+// 状態
+// ════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════
+// 状態
+// ════════════════════════════════════════════════════════
+let selectedLevel = null;
+let selectedMode  = 'practice';
+let currentProblems = [];
+let currentIndex    = 0;
+let results         = [];    // {prob, answer, userAnswer, correct, time}
+let sessionHistory  = [];    // 過去セッション
+let sessionTimer    = null;
+let problemTimer    = null;
+let sessionStartTime= 0;
+let problemStartTime= 0;
+let totalTime       = 0;     // セッション経過秒
+let answered        = false;
+let lastLevel       = null;
+let lastMode        = null;
+
+// ════════════════════════════════════════════════════════
+// UI初期化
+// ════════════════════════════════════════════════════════
+function init() {
+  renderLevelGrid();
+  renderHistorySection();
+  syncVisibleInputs();
+  updateUserBadge();
+}
+
+function renderLevelGrid() {
+  const grid = document.getElementById('levelGrid');
+
+  // グループ定義
+  const groups = [
+    { id:'10-8',   cols:1, label:null },
+    { id:'7-4',    cols:2, label:null },
+    { id:'3-1',    cols:3, label:null },
+    { id:'dan',    cols:3, label:'段位', labelColor:'#1A3A5C' },
+    { id:'meijin', cols:1, label:null },
+  ];
+
+  let html = '';
+  groups.forEach((grp, gi) => {
+    const items = LEVELS.filter(lv => lv.group === grp.id);
+    if(items.length === 0) return;
+
+    // 区切り線（最初以外）
+    if(gi > 0) html += `<div style="grid-column:1/-1;height:1px;background:var(--mist2);margin:4px 0;opacity:0.5;"></div>`;
+
+    // ラベル
+    if(grp.label) {
+      html += `<div style="grid-column:1/-1;padding:4px 6px;background:${grp.labelColor}18;border-left:3px solid ${grp.labelColor};font-size:11px;font-weight:700;color:${grp.labelColor};letter-spacing:0.06em;">${grp.label}</div>`;
+    }
+
+    // カードをcols列のグリッドに並べる
+    // 列数に応じてgrid-column-spanを指定
+    const colClass = grp.cols === 1 ? 'col-1' : grp.cols === 2 ? 'col-2' : 'col-3';
+    html += `<div class="sub-grid sub-grid-${grp.cols}" style="grid-column:1/-1;">`;
+    items.forEach(lv => {
+      if(lv.disabled) {
+        html += `<div class="level-card disabled" style="opacity:0.3;cursor:default;">
+          <div class="badge" style="background:${lv.color}">${lv.label}</div>
+          <div class="lname">${lv.title}</div>
+          <div class="lmeta">${lv.desc}</div>
+        </div>`;
+      } else {
+        html += `<div class="level-card" id="lc_${lv.key}" onclick="selectLevel('${lv.key}')">
+          <div class="badge" style="background:${lv.color}">${lv.label}</div>
+          <div class="lname">${lv.title}</div>
+          <div class="lmeta">${lv.desc}</div>
+        </div>`;
+      }
+    });
+    html += `</div>`;
+  });
+
+  grid.innerHTML = html;
+}
+
+function selectLevel(key) {
+  selectedLevel = key;
+  document.querySelectorAll('.level-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('lc_'+key).classList.add('selected');
+  document.getElementById('startBtn').disabled = false;
+  // ランキングボタン表示（ログイン中のみ）
+  const rkBtn = document.getElementById('rankingBtn');
+  if (rkBtn) rkBtn.style.display = currentUser ? 'block' : 'none';
+  setTimeout(()=>{
+    document.getElementById('startBtn').scrollIntoView({behavior:'smooth', block:'center'});
+  }, 80);
+}
+
+function selectMode(mode) {
+  selectedMode = mode;
+  document.getElementById('modePractice').classList.toggle('selected', mode==='practice');
+  document.getElementById('modeTest').classList.toggle('selected', mode==='test');
+}
+
+// ════════════════════════════════════════════════════════
+// クイズ開始
+// ════════════════════════════════════════════════════════
+function startQuiz() {
+  if(!selectedLevel) return;
+  const lv = LEVELS.find(l=>l.key===selectedLevel);
+  lastLevel = lv;
+  lastMode  = selectedMode;
+
+  currentProblems = lv.gen();
+  currentIndex    = 0;
+  results         = [];
+  answered        = false;
+  totalTime       = 0;
+
+  showScreen('screenQuiz');
+  document.getElementById('qLevelBadge').textContent = lv.label;
+  document.getElementById('qLevelBadge').style.background =
+    selectedMode==='test' ? '#AA3322' : '#1A3A5C';
+
+  // カウントダウン
+  startCountdown(()=>{
+    sessionStartTime = Date.now();
+    startSessionTimer(lv.timeLimit);
+    showQuestion();
+  });
+}
+
+function startCountdown(callback) {
+  const overlay = document.getElementById('countdownOverlay');
+  const numEl   = document.getElementById('countdownNum');
+  const lblEl   = document.getElementById('countdownLabel');
+  const lv      = lastLevel;
+  overlay.style.display = 'flex';
+  let count = 3;
+
+  function tick() {
+    if(count === 0) {
+      overlay.style.display = 'none';
+      callback();
+      return;
+    }
+    numEl.textContent = count;
+    numEl.style.animation = 'none';
+    void numEl.offsetWidth;
+    numEl.style.animation = 'cdPop 0.4s cubic-bezier(0.22,1,0.36,1)';
+    lblEl.textContent = '';
+    count--;
+    setTimeout(tick, 900);
+  }
+  tick();
+}
+
+function startSessionTimer(limitSec) {
+  clearInterval(sessionTimer);
+  const bar   = document.getElementById('timerBar');
+  const text  = document.getElementById('timerText');
+  let elapsed = 0;
+
+  sessionTimer = setInterval(()=>{
+    elapsed++;
+    totalTime = elapsed;
+    const remain = limitSec - elapsed;
+    if(remain <= 0) {
+      clearInterval(sessionTimer);
+      finishQuiz(true); // 時間切れ
+      return;
+    }
+    const pct = (remain/limitSec)*100;
+    bar.style.width = pct+'%';
+    bar.className = 'timer-bar' +
+      (pct<=15?' danger': pct<=30?' warning':'');
+    const m=Math.floor(remain/60), s=remain%60;
+    text.textContent = `残り ${m}:${s<10?'0':''}${s}`;
+  }, 1000);
+}
+
+// ════════════════════════════════════════════════════════
+// showQuestion・テンキー・採点 (統合版)
+// ════════════════════════════════════════════════════════
+
+
+// 問題文の分数を縦表示HTMLに変換
+function formatProblemDisplay(text) {
+  // "a/b" パターンを縦分数に変換
+  return text.replace(/([-]?\d+)\/(\d+)/g, (_, n, d) =>
+    '<span class="frac-display"><span class="frac-num">'+n+'</span><span class="frac-den">'+d+'</span></span>'
+  );
+}
+function getInputType(){
+  // 名人モードでは問題ごとのinputTypeを返す
+  const prob = currentProblems && currentProblems[currentIndex];
+  if(prob && prob.inputType !== undefined) return prob.inputType;
+  return (lastLevel && lastLevel.inputType) || '';
+}
+function isTwoBoxMode(){
+  const t=getInputType();
+  return t==='two'||t==='sqrt'||t==='frac'||t==='fracMixed'||t==='sqrtExpand'||t==='linearFunc';
+}
+
+// ── 変数 ─────────────────────────────────────────────
+let npValue='', npValue1='', npValue2='', npTwoPhase=1;
+let npFracPhase=1, npFracNum_v='', npFracDen_v='';
+let npMixPhase=1,  npMixInt_v='',  npMixNum_v='', npMixDen_v='';
+let npSePhase=1,   npSeInt_v='',   npSeSign_v='+', npSeCoef_v='', npSeRad_v='';
+// 一次関数: 傾きは文字列（整数または n/d 形式）
+let npLfPhase=1, npLfSlope_v='', npLfInt_v='';
+
+// 符号トグル（sqrtExpand用）
+function toggleSeSign(){
+  if(answered) return;
+  npSeSign_v = npSeSign_v==='+' ? '-' : '+';
+  const btn=document.getElementById('npSeSignBtn');
+  if(btn){ btn.textContent=npSeSign_v==='+' ? '＋' : '−';
+           btn.style.color=npSeSign_v==='+' ? 'var(--teal)' : 'var(--coral)';
+           btn.style.borderColor=npSeSign_v==='+' ? 'var(--teal)' : 'var(--coral)'; }
+}
+
+// ── syncVisibleInputs ─────────────────────────────────
+function syncVisibleInputs(){
+  const t=getInputType(); const isTB=isTwoBoxMode();
+  const sb=document.getElementById('numpadSingleBox');
+  const tb=document.getElementById('numpadTwoBox');
+  if(sb) sb.style.display=isTB?'none':'block';
+  if(tb) tb.style.display=isTB?'block':'none';
+  const sr=document.getElementById('singleAnswerRow');
+  const tr2=document.getElementById('twoAnswerRow');
+  if(sr) sr.style.display='none'; if(tr2) tr2.style.display='none';
+  // サブ行
+  const r2  =document.getElementById('npRow2');
+  const rF  =document.getElementById('npRowFrac');
+  const rFM =document.getElementById('npRowFracMixed');
+  const rSE =document.getElementById('npRowSqrtExpand');
+  if(r2)  r2.style.display  =(t==='two'||t==='sqrt')?'flex':'none';
+  if(rF)  rF.style.display  =t==='frac'?'block':'none';
+  if(rFM) rFM.style.display =t==='fracMixed'?'block':'none';
+  if(rSE) rSE.style.display =t==='sqrtExpand'?'block':'none';
+  const rLF=document.getElementById('npRowLinearFunc');
+  if(rLF) rLF.style.display=t==='linearFunc'?'block':'none';
+  // /ボタンは linearFunc の傾き入力フェーズのみ表示
+  const slashRow=document.getElementById('npSlashRow');
+  if(slashRow) slashRow.style.display=(t==='linearFunc'&&npLfPhase===1)?'block':'none';
+}
+
+// ── npRefresh ─────────────────────────────────────────
+function npRefresh(){
+  const t=getInputType();
+  function el(id){return document.getElementById(id);}
+  function set(id,val,active){
+    const e=el(id); if(!e) return;
+    e.textContent=val||'？';
+    e.classList.toggle('active',!!active);
+  }
+  if(t==='frac'){
+    set('npFracNum',npFracNum_v,npFracPhase===1);
+    set('npFracDen',npFracDen_v,npFracPhase===2);
+  } else if(t==='fracMixed'){
+    set('npMixInt',npMixInt_v,npMixPhase===1);
+    set('npMixNum',npMixNum_v,npMixPhase===2);
+    set('npMixDen',npMixDen_v,npMixPhase===3);
+  } else if(t==='sqrtExpand'){
+    set('npSeInt', npSeInt_v,  npSePhase===1);
+    set('npSeCoef',npSeCoef_v, npSePhase===2);
+    set('npSeRad', npSeRad_v,  npSePhase===3);
+  } else if(t==='linearFunc'){
+    set('npLfSlope',     npLfSlope_v, npLfPhase===1);
+    set('npLfIntercept', npLfInt_v,   npLfPhase===2);
+  } else if(isTwoBoxMode()){
+    set('npDisplay1',npValue1,npTwoPhase===1);
+    set('npDisplay2',npValue2,npTwoPhase===2);
+  } else {
+    set('npDisplay',npValue,true);
+  }
+  syncVisibleInputs();
+}
+
+// ── showQuestion ──────────────────────────────────────
+function showQuestion(){
+  const prob=currentProblems[currentIndex];
+  const total=currentProblems.length;
+  answered=false;
+  document.getElementById('qNum').textContent='問題 '+(currentIndex+1);
+  document.getElementById('qProgress').textContent=(currentIndex+1)+' / '+total;
+  document.getElementById('qProblem').innerHTML=formatProblemDisplay(prob.display);
+  document.getElementById('answerHint').textContent='';
+  document.getElementById('answerHint').className='answer-hint';
+  document.getElementById('practiceAnswerDiv').innerHTML='';
+  document.getElementById('progressBar').style.width=(currentIndex/total*100)+'%';
+  document.getElementById('nextBtn').disabled=true;
+
+  const t=getInputType(); const isTB=isTwoBoxMode(); const lv=lastLevel;
+
+  // リセット
+  npValue=''; npValue1=''; npValue2=''; npTwoPhase=1;
+  npFracPhase=1; npFracNum_v=''; npFracDen_v='';
+  npMixPhase=1;  npMixInt_v='';  npMixNum_v=''; npMixDen_v='';
+  npSePhase=1;   npSeInt_v='';   npSeSign_v='+'; npSeCoef_v=''; npSeRad_v='';
+  npLfPhase=1; npLfSlope_v=''; npLfInt_v='';
+
+  // 符号ボタンリセット
+  const signBtn=document.getElementById('npSeSignBtn');
+  if(signBtn){signBtn.textContent='＋';signBtn.style.color='var(--teal)';signBtn.style.borderColor='var(--teal)';}
+  // linearFunc: 符号ボタンなし（テキスト入力に統合）
+
+  // 決定ボタン
+  const sub=document.getElementById('npSubmit');
+  if(sub){
+    sub.disabled=false;
+    sub.textContent=
+      t==='frac'?'分母へ →':
+      t==='fracMixed'?'次へ →':
+      t==='sqrtExpand'?'√係数へ →':
+      t==='linearFunc'?'切片へ →':
+      isTB?'次へ →':'決定';
+  }
+
+  // ガイドテキスト
+  document.getElementById('opGuide').textContent=
+    (t==='frac'||t==='fracMixed')?'整数（ない場合はそのまま次へ）→ 分子 → 分母 → 決定':
+    t==='sqrtExpand'?'整数部 → 符号ボタン → √係数 → √内 → 決定':
+    t==='linearFunc'?'傾きを入力（分数なら / を使用、±1のときは 1 または -1）→ 切片 → 決定':
+    isTB?'2つの数を入力 → 次へ → 決定で採点 → 自動で次へ':
+    '答えを入力 → 決定で採点 → 自動で次の問題へ';
+
+  // ラベル・セパレーター
+  const prob2=currentProblems[currentIndex];
+  const labels=(prob2&&prob2.inputLabels)||(lv&&lv.inputLabels)||null;
+  const lb1=document.getElementById('npLabel1'); const lb2=document.getElementById('npLabel2');
+  if(labels){ if(lb1) lb1.textContent=labels[0]; if(lb2) lb2.textContent=labels[1]; }
+  else { if(lb1) lb1.textContent='1つ目'; if(lb2) lb2.textContent='2つ目'; }
+  const sep=document.getElementById('npSep');
+  if(sep) sep.textContent=t==='sqrt'?'√':'と';
+
+  // displayリセット
+  ['npDisplay','npDisplay1','npDisplay2','npFracNum','npFracDen',
+   'npMixInt','npMixNum','npMixDen','npSeInt','npSeCoef','npSeRad',
+   'npLfSlope','npLfIntercept'].forEach(id=>{
+    const e=document.getElementById(id); if(e) e.className='numpad-display';
+  });
+
+  syncVisibleInputs();
+  npRefresh();
+  problemStartTime=Date.now();
+}
+
+// ── npInput ───────────────────────────────────────────
+function npInput(ch){
+  if(answered) return;
+  const t=getInputType();
+  if(t==='frac'){
+    if(npFracPhase===1){
+      if(ch==='-'&&npFracNum_v!=='') return;
+      if(ch==='-') npFracNum_v='-'; else if(npFracNum_v.length<4) npFracNum_v+=ch;
+    } else { if(ch==='-') return; if(npFracDen_v.length<3) npFracDen_v+=ch; }
+  } else if(t==='fracMixed'){
+    if(npMixPhase===1){
+      if(ch==='-'&&npMixInt_v!=='') return;
+      if(ch==='-') npMixInt_v='-'; else if(npMixInt_v.length<3) npMixInt_v+=ch;
+    } else if(npMixPhase===2){ if(ch==='-') return; if(npMixNum_v.length<3) npMixNum_v+=ch; }
+      else { if(ch==='-') return; if(npMixDen_v.length<3) npMixDen_v+=ch; }
+  } else if(t==='sqrtExpand'){
+    if(npSePhase===1){ if(npSeInt_v.length<4) npSeInt_v+=ch; }
+    else if(npSePhase===2){ if(ch==='-') return; if(npSeCoef_v.length<3) npSeCoef_v+=ch; }
+    else { if(ch==='-') return; if(npSeRad_v.length<3) npSeRad_v+=ch; }
+  } else if(t==='linearFunc'){
+    if(npLfPhase===1){
+      // 傾き入力: 数字・-・/ が使える
+      if(ch==='-'){
+        if(npLfSlope_v!=='') return; // 先頭のみ
+        npLfSlope_v='-';
+      } else if(ch==='/'){
+        // / は1回だけ・数字の後のみ
+        if(npLfSlope_v===''||npLfSlope_v==='-') return;
+        if(npLfSlope_v.includes('/')) return;
+        npLfSlope_v+='/';
+      } else {
+        // 数字: /の後は分母（1桁）、前は分子（最大2桁）
+        const parts=npLfSlope_v.replace('-','').split('/');
+        if(parts.length===2){
+          if(parts[1].length>=1) return; // 分母は1桁
+        } else {
+          if(parts[0].length>=2) return; // 分子は2桁まで
+        }
+        npLfSlope_v+=ch;
+      }
+    } else {
+      // 切片入力
+      if(ch==='-'){
+        if(npLfInt_v!=='') return;
+        npLfInt_v='-';
+      } else if(npLfInt_v.length<3) {
+        npLfInt_v+=ch;
+      }
+    }
+  } else if(isTwoBoxMode()){
+    if(npTwoPhase===1){
+      if(ch==='-'&&npValue1!=='') return;
+      if(ch==='-') npValue1='-'; else if(npValue1.length<4) npValue1+=ch;
+    } else {
+      if(ch==='-'&&npValue2==='') npValue2='-';
+      else if(npValue2.length<4) npValue2+=ch;
+    }
+  } else {
+    if(ch==='-'&&npValue!=='') return;
+    if(ch==='-') npValue='-'; else if(npValue.length<5) npValue+=ch;
+  }
+  npRefresh();
+}
+
+// ── npDel ─────────────────────────────────────────────
+function npDel(){
+  if(answered) return;
+  const t=getInputType();
+  const sub=document.getElementById('npSubmit');
+  function deactivate(id){const e=document.getElementById(id);if(e)e.classList.remove('active');}
+  function activate(id){const e=document.getElementById(id);if(e)e.classList.add('active');}
+
+  if(t==='frac'){
+    if(npFracPhase===2 && npFracDen_v===''){
+      // 分母が空の状態で⌫ → 分子に戻る
+      npFracPhase=1; deactivate('npFracDen'); activate('npFracNum');
+      if(sub) sub.textContent='分母へ →';
+    } else if(npFracPhase===1){
+      npFracNum_v=npFracNum_v.slice(0,-1);
+    } else {
+      npFracDen_v=npFracDen_v.slice(0,-1);
+    }
+  } else if(t==='fracMixed'){
+    if(npMixPhase===2 && npMixNum_v===''){
+      // 分子が空の状態で⌫ → 整数に戻る
+      npMixPhase=1; deactivate('npMixNum'); activate('npMixInt');
+      if(sub) sub.textContent='次へ →';
+    } else if(npMixPhase===3 && npMixDen_v===''){
+      // 分母が空の状態で⌫ → 分子に戻る
+      npMixPhase=2; deactivate('npMixDen'); activate('npMixNum');
+      if(sub) sub.textContent='分母へ →';
+    } else if(npMixPhase===1) npMixInt_v=npMixInt_v.slice(0,-1);
+    else if(npMixPhase===2)   npMixNum_v=npMixNum_v.slice(0,-1);
+    else                      npMixDen_v=npMixDen_v.slice(0,-1);
+  } else if(t==='sqrtExpand'){
+    if(npSePhase===1)      npSeInt_v=npSeInt_v.slice(0,-1);
+    else if(npSePhase===2) npSeCoef_v=npSeCoef_v.slice(0,-1);
+    else                   npSeRad_v=npSeRad_v.slice(0,-1);
+  } else if(t==='linearFunc'){
+    const sub2=document.getElementById('npSubmit');
+    function da2(id){const e=document.getElementById(id);if(e)e.classList.remove('active');}
+    function ac2(id){const e=document.getElementById(id);if(e)e.classList.add('active');}
+    if(npLfPhase===2 && npLfInt_v===''){
+      // 切片が空→傾きに戻る
+      npLfPhase=1; da2('npLfIntercept'); ac2('npLfSlope');
+      if(sub2) sub2.textContent='切片へ →';
+      // /ボタンを再表示
+      const sr=document.getElementById('npSlashRow');
+      if(sr) sr.style.display='block';
+    } else if(npLfPhase===1) {
+      npLfSlope_v=npLfSlope_v.slice(0,-1);
+    } else {
+      npLfInt_v=npLfInt_v.slice(0,-1);
+    }
+  } else if(isTwoBoxMode()){
+    // two（連立方程式など）: 2つ目が空の状態で⌫ → 1つ目に戻る
+    if(npTwoPhase===2 && npValue2===''){
+      npTwoPhase=1;
+      deactivate('npDisplay2'); activate('npDisplay1');
+      if(sub) sub.textContent='次へ →';
+    } else if(npTwoPhase===1) npValue1=npValue1.slice(0,-1);
+    else                      npValue2=npValue2.slice(0,-1);
+  } else {
+    npValue=npValue.slice(0,-1);
+  }
+  npRefresh();
+}
+
+// ── npSubmit ──────────────────────────────────────────
+function npSubmit(){
+  if(answered) return;
+  const t=getInputType(); const sub=document.getElementById('npSubmit');
+  function activate(id){ const e=document.getElementById(id); if(e) e.classList.add('active'); }
+  function deactivate(id){ const e=document.getElementById(id); if(e) e.classList.remove('active'); }
+
+  if(t==='frac'){
+    if(npFracPhase===1){
+      if(!npFracNum_v||npFracNum_v==='-') return;
+      npFracPhase=2; deactivate('npFracNum'); activate('npFracDen');
+      if(sub) sub.textContent='決定'; return;
+    }
+    if(!npFracDen_v||npFracDen_v==='0') return;
+    checkAnswerFrac(npFracNum_v,npFracDen_v);
+
+  } else if(t==='fracMixed'){
+    if(npMixPhase===1){
+      // 整数未入力の場合は 0 として扱う（真分数の答えのときはそのまま次へ）
+      if(!npMixInt_v) npMixInt_v='0';
+      npMixPhase=2; deactivate('npMixInt'); activate('npMixNum');
+      npRefresh();
+      if(sub) sub.textContent='分母へ →'; return;
+    }
+    if(npMixPhase===2){
+      if(!npMixNum_v) return;
+      npMixPhase=3; deactivate('npMixNum'); activate('npMixDen');
+      if(sub) sub.textContent='決定'; return;
+    }
+    if(!npMixDen_v||npMixDen_v==='0') return;
+    checkAnswerFracMixed(npMixInt_v,npMixNum_v,npMixDen_v);
+
+  } else if(t==='sqrtExpand'){
+    if(npSePhase===1){
+      if(!npSeInt_v) return;
+      npSePhase=2; deactivate('npSeInt'); activate('npSeCoef');
+      if(sub) sub.textContent='√内へ →'; return;
+    }
+    if(npSePhase===2){
+      if(!npSeCoef_v) return;
+      npSePhase=3; deactivate('npSeCoef'); activate('npSeRad');
+      if(sub) sub.textContent='決定'; return;
+    }
+    if(!npSeRad_v) return;
+    checkAnswerSqrtExpand(npSeInt_v,npSeSign_v,npSeCoef_v,npSeRad_v);
+
+  } else if(t==='linearFunc'){
+    if(npLfPhase===1){
+      // 傾きのバリデーション
+      if(!npLfSlope_v||npLfSlope_v==='-'||npLfSlope_v.endsWith('/')) return;
+      npLfPhase=2;
+      deactivate('npLfSlope'); activate('npLfIntercept');
+      // /ボタンを非表示
+      const slashRow=document.getElementById('npSlashRow');
+      if(slashRow) slashRow.style.display='none';
+      if(sub) sub.textContent='決定'; return;
+    }
+    // 切片未入力は0
+    if(!npLfInt_v) npLfInt_v='0';
+    checkAnswerLinearFunc(npLfSlope_v, npLfInt_v);
+
+  } else if(isTwoBoxMode()){
+    if(npTwoPhase===1){
+      if(npValue1===''||npValue1==='-') return;
+      npTwoPhase=2;
+      deactivate('npDisplay1'); activate('npDisplay2');
+      if(sub) sub.textContent='決定'; return;
+    }
+    if(npValue2===''||npValue2==='-') return;
+    checkAnswerTwo(npValue1,npValue2);
+  } else {
+    if(npValue===''||npValue==='-') return;
+    checkAnswer();
+  }
+}
+
+// PCキーボード
+document.addEventListener('keydown',function(e){
+  if(answered){if(e.key==='Enter')e.preventDefault();return;}
+  if(e.key>='0'&&e.key<='9'){e.preventDefault();npInput(e.key);}
+  else if(e.key==='-'){e.preventDefault();npInput('-');}
+  else if(e.key==='Backspace'){e.preventDefault();npDel();}
+  else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();npSubmit();}
+});
+function handleKeydown(e){}
+function handleKeydownTwo(e,b){}
+function handleInput(e){}
+
+// ── doResult ─────────────────────────────────────────
+function doResult(userAns,correct,elapsed){
+  answered=true;
+  const prob=currentProblems[currentIndex];
+  results.push({prob:prob.display,answer:prob.answer,userAnswer:userAns,correct,time:elapsed});
+  const hint=document.getElementById('answerHint');
+  const qc  =document.getElementById('questionCard');
+  if(correct){
+    hint.textContent='✓ 正解！'; hint.className='answer-hint correct-msg';
+    if(qc){qc.classList.add('flash-correct');setTimeout(()=>qc.classList.remove('flash-correct'),500);}
+  } else {
+    const sa=selectedMode==='practice'?` 　正解: ${prob.answer}`:'';
+    hint.textContent=`✗ 不正解${sa}`; hint.className='answer-hint incorrect-msg';
+    if(qc){qc.classList.add('flash-incorrect');setTimeout(()=>qc.classList.remove('flash-incorrect'),500);}
+  }
+  ['npDisplay','npFracNum','npFracDen','npMixInt','npMixNum','npMixDen',
+   'npSeInt','npSeCoef','npSeRad','npDisplay1','npDisplay2',
+   'npLfSlope','npLfIntercept'].forEach(id=>{
+    const e=document.getElementById(id);
+    if(e){e.classList.remove('active');e.classList.add(correct?'correct':'incorrect');}
+  });
+  document.getElementById('npSubmit').disabled=true;
+  const snap=currentIndex;
+  const delay=correct?650:(selectedMode==='practice'?1200:650);
+  setTimeout(()=>{if(answered&&currentIndex===snap)nextQuestion();},delay);
+}
+
+// ── 採点関数 ──────────────────────────────────────────
+function checkAnswer(){
+  if(answered) return;
+  const v=String(npValue).trim();
+  if(!v||v==='-') return;
+  const prob=currentProblems[currentIndex];
+  doResult(v,v===prob.answer,(Date.now()-problemStartTime)/1000);
+}
+
+function checkAnswerTwo(v1,v2){
+  if(answered) return;
+  const prob=currentProblems[currentIndex];
+  const [a,b]=prob.answer2;
+  const isSqrt=getInputType()==='sqrt';
+  const correct=isSqrt
+    ?(Number(v1)===a&&Number(v2)===b)
+    :((Number(v1)===a&&Number(v2)===b)||(Number(v1)===b&&Number(v2)===a));
+  doResult(`${v1} と ${v2}`,correct,(Date.now()-problemStartTime)/1000);
+}
+
+function checkAnswerFrac(numStr,denStr){
+  if(answered) return;
+  const prob=currentProblems[currentIndex];
+  const userAns=denStr==='1'?numStr:`${numStr}/${denStr}`;
+  doResult(userAns,userAns===prob.answer,(Date.now()-problemStartTime)/1000);
+}
+
+function checkAnswerFracMixed(intStr,numStr,denStr){
+  if(answered) return;
+  const prob=currentProblems[currentIndex];
+  const w=parseInt(intStr)||0;
+  let ua;
+  if(!numStr||numStr==='0') ua=intStr;
+  else if(w===0) ua=`${numStr}/${denStr}`;
+  else           ua=`${intStr}と${numStr}/${denStr}`;
+  doResult(ua,ua===prob.answer,(Date.now()-problemStartTime)/1000);
+}
+
+function checkAnswerSqrtExpand(intStr,sign,coefStr,radStr){
+  if(answered) return;
+  const prob=currentProblems[currentIndex];
+  const a4=prob.answer4;
+  const correct=Number(intStr)===a4.int && sign===a4.sign &&
+                Number(coefStr)===a4.coef && Number(radStr)===a4.rad;
+  doResult(`${intStr}${sign}${coefStr}√${radStr}`,correct,(Date.now()-problemStartTime)/1000);
+}
+
+
+function checkAnswerLinearFunc(slopeStr, interceptStr) {
+  if(answered) return;
+  const prob=currentProblems[currentIndex];
+  const lf=prob.answerLF;
+  const b=parseInt(interceptStr)||0;
+
+  // slopeStr を sn/sd に解析（例: "1/2"→{sn:1,sd:2}, "-3"→{sn:-3,sd:1}, "1"→{sn:1,sd:1}）
+  let sn, sd;
+  if(slopeStr.includes('/')) {
+    const parts=slopeStr.split('/');
+    sn=parseInt(parts[0]); sd=parseInt(parts[1])||1;
+  } else {
+    sn=parseInt(slopeStr)||0; sd=1;
+  }
+  // 既約かチェック（例: 2/4 は不正解）
+  function gcd2(a,b){a=Math.abs(a);while(b){let t=b;b=a%b;a=t;}return a;}
+  const g=gcd2(Math.abs(sn),sd);
+  const correct=(sn/g===lf.sn && sd/g===lf.sd && b===lf.b);
+
+  const dispSlope=sd===1?`${sn}`:
+    sn===1?`1/${sd}`:sn===-1?`-1/${sd}`:`${sn}/${sd}`;
+  doResult(`y=${dispSlope}x${b>=0?'+'+b:b}`,correct,(Date.now()-problemStartTime)/1000);
+}
+
+function skipQuestion(){}
+
+function nextQuestion() {
+  if(!answered) return; // 未採点なら何もしない
+  if(currentIndex >= currentProblems.length) return;
+  currentIndex++;
+  if(currentIndex >= currentProblems.length) {
+    finishQuiz(false);
+  } else {
+    showQuestion();
+  }
+}
+
+function abortQuiz() {
+  if(!confirm('中断しますか？')) return;
+  clearInterval(sessionTimer);
+  showScreen('screenSelect');
+}
+
+// ════════════════════════════════════════════════════════
+// 結果
+// ════════════════════════════════════════════════════════
+function finishQuiz(timeUp=false) {
+  clearInterval(sessionTimer);
+  const lv = lastLevel;
+  const correct = results.filter(r=>r.correct).length;
+  const total   = currentProblems.length;
+  const answered2 = results.length;
+  const rate    = correct/total;
+  const passed  = rate >= lv.passRate && !timeUp;
+  const avgTime = results.length ? (results.reduce((s,r)=>s+r.time,0)/results.length).toFixed(1) : '-';
+  const mins    = Math.floor(totalTime/60);
+  const secs    = totalTime%60;
+
+  // セッションを履歴に保存
+  const session = {
+    level:    lv.label,
+    title:    lv.title,
+    color:    lv.color,
+    mode:     lastMode==='practice'?'練習':'検定',
+    correct, total, rate, passed, avgTime,
+    totalTime: `${mins}:${secs<10?'0':''}${secs}`,
+    totalTimeSec: totalTime,
+    date:     new Date().toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}),
+    details:  [...results],
+  };
+  sessionHistory.unshift(session);
+
+  // GASにログ送信（非同期・エラーは無視）
+  saveLogToGAS(session).catch(()=>{});
+
+  // 結果ヘッダー
+  const hdr = document.getElementById('resultHeader');
+  hdr.innerHTML = `
+    <div style="flex:1">
+      <div style="font-size:11px;opacity:0.7;margin-bottom:4px;">${lv.label}　${lastMode==='practice'?'練習':'検定'}モード</div>
+      <div style="display:flex;align-items:baseline;gap:4px;">
+        <span class="big-score">${correct}</span>
+        <span class="score-denom">/ ${total}</span>
+      </div>
+      <div style="margin-top:6px;">
+        <span class="${passed?'passed':'failed'}">${passed?'🎉 合格':'→ もう少し'}</span>
+      </div>
+    </div>
+    <div class="score-info">
+      <div>経過時間 ${mins}分${secs}秒</div>
+      <div style="margin-top:2px;">正答率 ${Math.round(rate*100)}%</div>
+      ${timeUp?'<div style="color:#FAC775;margin-top:2px;">⏰ 時間切れ</div>':''}
+    </div>
+  `;
+  hdr.style.background = passed ? '#1A3A5C' : '#AA3322';
+
+  // 統計
+  document.getElementById('statRow').innerHTML = `
+    <div class="stat-item">
+      <div class="sv" style="color:var(--teal)">${correct}</div>
+      <div class="sl">正解</div>
+    </div>
+    <div class="stat-item">
+      <div class="sv" style="color:var(--coral)">${total-correct}</div>
+      <div class="sl">不正解・スキップ</div>
+    </div>
+    <div class="stat-item">
+      <div class="sv">${avgTime}秒</div>
+      <div class="sl">平均タイム/問</div>
+    </div>
+  `;
+
+  // 詳細リスト
+  document.getElementById('detailList').innerHTML = results.map((r,i)=>`
+    <div class="detail-item">
+      <div class="di-num">${i+1}</div>
+      <div class="di-prob">${r.prob} ＝</div>
+      <div class="di-ans">${r.userAnswer||'　'}</div>
+      ${r.correct?'':`<div class="di-wrong-ans">(${r.answer})</div>`}
+      <div class="di-mark ${r.correct?'ok':r.skipped?'skip':'ng'}">
+        ${r.correct?'○':r.skipped?'－':'✗'}
+      </div>
+    </div>
+  `).join('');
+
+  showScreen('screenResult');
+  renderHistorySection();
+}
+
+function retryQuiz() {
+  showScreen('screenSelect');
+  if(lastLevel) selectLevel(lastLevel.key);
+  if(lastMode)  selectMode(lastMode);
+}
+
+// ════════════════════════════════════════════════════════
+// 履歴表示
+// ════════════════════════════════════════════════════════
+function renderHistorySection() {
+  const sec = document.getElementById('historySection');
+  if(sessionHistory.length===0) {
+    sec.innerHTML='';
+    return;
+  }
+  const recent = sessionHistory.slice(0,5);
+  sec.innerHTML = `
+    <p style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;">📋 直近の結果</p>
+    ${recent.map(s=>`
+      <div class="history-item">
+        <div class="hi-badge" style="background:${s.color}">${s.level}</div>
+        <div class="hi-info">
+          <div class="hi-score">${s.correct} / ${s.total}問　${Math.round(s.rate*100)}%</div>
+          <div class="hi-meta">${s.mode} ／ ${s.totalTime} ／ ${s.date}</div>
+        </div>
+        <div class="hi-result ${s.passed?'pass':'fail'}">${s.passed?'合格':'再挑戦'}</div>
+      </div>
+    `).join('')}
+  `;
+}
+
+// ════════════════════════════════════════════════════════
+// 画面切り替え
+// ════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // 選択画面・結果画面のみ先頭へ戻る（問題画面はスクロール維持）
+  if(id !== 'screenQuiz') window.scrollTo(0,0);
+}
+
+// ════════════════════════════════════════════════════════
+// ユーザー管理・API通信
+// ════════════════════════════════════════════════════════
+let currentUser = null; // {code, nickname}
+
+// ローカルストレージからセッション復元
+function restoreSession() {
+  try {
+    const saved = localStorage.getItem('calcUser');
+    if (saved) currentUser = JSON.parse(saved);
+  } catch(e) {}
+}
+
+function saveSession(user) {
+  currentUser = user;
+  localStorage.setItem('calcUser', JSON.stringify(user));
+  updateUserBadge();
+}
+
+function clearSession() {
+  currentUser = null;
+  localStorage.removeItem('calcUser');
+  updateUserBadge();
+}
+
+function updateUserBadge() {
+  const area = document.getElementById('userBadgeArea');
+  if (!area) return;
+  if (currentUser) {
+    area.innerHTML = `<div class="user-badge">👤 ${currentUser.nickname}</div>`;
+  } else {
+    area.innerHTML = '';
+  }
+}
+
+// ── API呼び出し共通 ─────────────────────────────────────
+async function gasCall(body) {
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'text/plain'},
+      body: JSON.stringify(body)
+    });
+    return await res.json();
+  } catch(e) {
+    return {ok: false, error: 'ネットワークエラー: ' + e.message};
+  }
+}
+
+// ── ログイン ────────────────────────────────────────────
+async function doLogin() {
+  const code = document.getElementById('loginCode').value.trim();
+  const pw   = document.getElementById('loginPw').value.trim();
+  const err  = document.getElementById('loginErr');
+  if (!code || !pw) { err.textContent = 'コードとパスワードを入力してください'; return; }
+
+  err.textContent = '確認中...';
+  const res = await gasCall({action:'login', code, password:pw});
+  if (!res.ok) { err.textContent = res.error || 'ログイン失敗'; return; }
+
+  saveSession({code, nickname: res.nickname || ''});
+
+  if (res.needNickname) {
+    showScreen('screenNickname');
+  } else {
+    showScreen('screenSelect');
+    renderLevelGrid();
+  }
+}
+
+// ── ニックネーム設定 ────────────────────────────────────
+async function doSetNickname() {
+  const nick = document.getElementById('nicknameInput').value.trim();
+  const err  = document.getElementById('nicknameErr');
+  if (!nick) { err.textContent = 'ニックネームを入力してください'; return; }
+  if (nick.length > 10) { err.textContent = '10文字以内にしてください'; return; }
+
+  err.textContent = '設定中...';
+  const res = await gasCall({action:'setNickname', code: currentUser.code, nickname: nick});
+  if (!res.ok) { err.textContent = res.error || '設定失敗'; return; }
+
+  saveSession({...currentUser, nickname: nick});
+  showScreen('screenSelect');
+  renderLevelGrid();
+}
+
+// ── ログアウト ──────────────────────────────────────────
+function doLogout() {
+  if (!confirm('ログアウトしますか？')) return;
+  clearSession();
+  document.getElementById('loginCode').value = '';
+  document.getElementById('loginPw').value   = '';
+  document.getElementById('loginErr').textContent = '';
+  showScreen('screenLogin');
+}
+
+// ── ランキング表示 ──────────────────────────────────────
+function openRanking() {
+  if (!selectedLevel) return;
+  const lv = LEVELS.find(l => l.key === selectedLevel);
+  if (!lv) return;
+  showScreen('screenRanking');
+  loadRanking(lv);
+}
+
+async function loadRanking(lv) {
+  const title = document.getElementById('rankingTitle');
+  const body  = document.getElementById('rankingBody');
+  title.textContent = `${lv.label}「${lv.title}」`;
+  body.innerHTML = '<p style="color:var(--mist);font-size:13px;padding:20px 0;text-align:center;">読み込み中...</p>';
+
+  const res = await gasCall({action:'ranking', level: lv.key});
+  if (!res.ok) {
+    body.innerHTML = `<p style="color:var(--coral);font-size:13px;">読み込みエラー: ${res.error}</p>`;
+    return;
+  }
+
+  if (!res.ranking || res.ranking.length === 0) {
+    body.innerHTML = '<p style="color:var(--mist);font-size:13px;padding:20px 0;text-align:center;">まだ記録がありません<br><small>検定モードで満点を出すとランキングに載ります！</small></p>';
+    return;
+  }
+
+  const rows = res.ranking.map((r, i) => {
+    const isMe = currentUser && r.nickname === currentUser.nickname;
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const m = Math.floor(r.best/60);
+    const s = r.best % 60;
+    const timeStr = m > 0 ? `${m}分${s}秒` : `${r.best}秒`;
+    return `<tr class="${isMe?'rank-me':''} rank-${i+1}">
+      <td style="text-align:center;">${medal||i+1}</td>
+      <td>${r.nickname}${isMe?' 👈':''}</td>
+      <td style="text-align:right;">${timeStr}</td>
+    </tr>`;
+  }).join('');
+
+  body.innerHTML = `
+    <p style="font-size:11px;color:var(--mist);margin-bottom:8px;">検定モード・満点のみ対象　上位${res.ranking.length}名</p>
+    <table class="rank-table">
+      <tr><th>順位</th><th>ニックネーム</th><th>ベストタイム</th></tr>
+      ${rows}
+    </table>`;
+}
+
+// ── 自分のログ ──────────────────────────────────────────
+async function openMyLogs() {
+  showScreen('screenMyLogs');
+  const body = document.getElementById('myLogsBody');
+  body.innerHTML = '<p style="color:var(--mist);font-size:13px;padding:20px 0;text-align:center;">読み込み中...</p>';
+
+  if (!currentUser) { body.innerHTML = '<p style="color:var(--coral);">ログインが必要です</p>'; return; }
+
+  const pw = prompt('パスワードを再入力してください（確認用）');
+  if (!pw) { showScreen('screenSelect'); return; }
+
+  const res = await gasCall({action:'myLogs', code: currentUser.code, password: pw});
+  if (!res.ok) { body.innerHTML = `<p style="color:var(--coral);">${res.error}</p>`; return; }
+
+  if (!res.logs || res.logs.length === 0) {
+    body.innerHTML = '<p style="color:var(--mist);text-align:center;">まだ記録がありません</p>';
+    return;
+  }
+
+  const items = res.logs.map(l => {
+    const d = new Date(l.date);
+    const dateStr = `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const m = Math.floor(l.time/60); const s = l.time%60;
+    const timeStr = m>0?`${m}分${s}秒`:`${l.time}秒`;
+    const modeLabel = l.mode==='test'?'検定':'練習';
+    return `<div class="mylog-item">
+      <span class="mylog-mode ${l.mode}">${modeLabel}</span>
+      <span style="flex:1;color:var(--ink2);">${l.title}</span>
+      <span style="color:var(--mist);">${l.rate}%</span>
+      <span style="color:var(--ink);">${timeStr}</span>
+      ${l.mode==='test'&&l.passed==='合格'?'<span class="mylog-pass">✓</span>':''}
+    </div>`;
+  }).join('');
+
+  body.innerHTML = `<p style="font-size:11px;color:var(--mist);margin-bottom:8px;">直近${res.logs.length}件（新しい順）</p>${items}`;
+}
+
+// ── セッション結果をGASに送信 ───────────────────────────
+async function saveLogToGAS(session) {
+  if (!currentUser) return; // 未ログインは送信しない
+  if (GAS_URL.includes('YOUR_SCRIPT_ID')) return; // URL未設定
+
+  await gasCall({
+    action:     'savelog',
+    code:       currentUser.code,
+    nickname:   currentUser.nickname,
+    level:      session.level,
+    levelTitle: session.title,
+    nQ:         session.total,
+    correct:    session.correct,
+    timeSec:    session.totalTimeSec,
+    mode:       session.mode === '検定' ? 'test' : 'practice'
+  });
+}
+
+
+// 起動
+restoreSession();
+if(currentUser){ init(); showScreen('screenSelect'); } else { init(); showScreen('screenLogin'); }
+
+</script>
+</body>
+</html>

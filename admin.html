@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>管理画面 - 計算力育成プログラム</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  :root {
+    --navy:"#1A3A5C"; --teal:#0F6E56; --teal2:#1A9A78;
+    --amber:#C8820A; --coral:#AA3322;
+    --pale:#F4F7FA; --pale2:#E8EEF5;
+    --ink:#1E2532; --ink2:#3C4A60; --mist:#7A8BA0;
+    --white:#FFFFFF; --radius:12px;
+    --shadow:0 2px 12px rgba(0,0,0,0.10);
+  }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Meiryo",sans-serif;
+         background:var(--pale); color:var(--ink); min-height:100vh; }
+
+  .app-header {
+    background:#1A3A5C; color:white; padding:12px 20px;
+    display:flex; align-items:center; gap:12px; box-shadow:0 2px 8px rgba(0,0,0,0.18);
+  }
+  .app-header h1 { font-size:15px; font-weight:700; }
+  .app-header .sub { font-size:10px; opacity:0.65; margin-top:2px; }
+  .admin-badge {
+    margin-left:auto; background:#AA3322; border-radius:6px;
+    padding:4px 10px; font-size:11px; font-weight:700;
+  }
+
+  .screen { display:none; padding:20px; max-width:900px; margin:0 auto; }
+  .screen.active { display:block; }
+
+  /* ── ログイン ── */
+  .login-card {
+    background:white; border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:32px 28px; max-width:380px; margin:60px auto;
+  }
+  .login-title { font-size:18px; font-weight:800; color:#1A3A5C; margin-bottom:4px; }
+  .login-sub   { font-size:11px; color:var(--mist); margin-bottom:20px; }
+  .form-group  { margin-bottom:14px; }
+  .form-group label { font-size:12px; font-weight:700; color:var(--ink2); display:block; margin-bottom:4px; }
+  .form-input  {
+    width:100%; padding:10px 14px; font-size:15px;
+    border:2px solid var(--pale2); border-radius:8px; outline:none; font-family:inherit;
+    transition:border-color 0.15s;
+  }
+  .form-input:focus { border-color:var(--teal); }
+  .err { color:#AA3322; font-size:12px; margin-top:6px; min-height:18px; }
+
+  /* ── ボタン ── */
+  .btn {
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    padding:10px 20px; border-radius:8px; font-size:13px; font-weight:700;
+    cursor:pointer; border:none; transition:all 0.15s; font-family:inherit;
+  }
+  .btn-primary { background:var(--teal); color:white; }
+  .btn-primary:hover { background:var(--teal2); }
+  .btn-secondary { background:var(--pale2); color:var(--ink2); }
+  .btn-secondary:hover { background:#d0dae8; }
+  .btn-danger { background:#AA3322; color:white; }
+  .btn-sm { padding:6px 12px; font-size:11px; }
+  .btn-block { width:100%; }
+
+  /* ── タブ ── */
+  .tab-bar {
+    display:flex; background:white; border-radius:var(--radius);
+    box-shadow:var(--shadow); margin-bottom:16px; overflow:hidden;
+  }
+  .tab { flex:1; padding:11px 8px; background:none; border:none;
+         font-size:12px; font-weight:600; color:var(--mist); cursor:pointer; }
+  .tab.active { background:#1A3A5C; color:white; }
+
+  /* ── カード ── */
+  .card {
+    background:white; border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:16px 18px; margin-bottom:14px;
+  }
+  .card-title { font-size:14px; font-weight:700; color:#1A3A5C; margin-bottom:12px; }
+
+  /* ── テーブル ── */
+  .data-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .data-table th {
+    background:#1A3A5C; color:white; padding:8px 10px;
+    text-align:left; font-size:11px;
+  }
+  .data-table td { padding:8px 10px; border-bottom:1px solid var(--pale2); }
+  .data-table tr:nth-child(even) td { background:var(--pale); }
+  .data-table tr:hover td { background:#e8f0f8; }
+
+  /* ── フォーム行 ── */
+  .form-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .form-row .form-group { flex:1; min-width:100px; }
+
+  /* ── ステータス ── */
+  .status { padding:4px 8px; border-radius:4px; font-size:10px; font-weight:700; }
+  .status.pass { background:#E8F5EE; color:#0F6E56; }
+  .status.fail { background:#FDECEA; color:#AA3322; }
+  .status.test { background:#FDECEA; color:#AA3322; }
+  .status.practice { background:#EBF5F1; color:#0F6E56; }
+
+  /* ── ランキング ── */
+  .rank-table { width:100%; border-collapse:collapse; }
+  .rank-table th { background:#1A3A5C; color:white; padding:8px 10px; font-size:11px; }
+  .rank-table td { padding:8px 10px; border-bottom:1px solid var(--pale2); font-size:12px; }
+  .rank-table tr:nth-child(even) td { background:var(--pale); }
+  .rank-1 td { background:#FFF8E1 !important; font-weight:700; }
+  .rank-2 td { background:#F5F5F5 !important; }
+  .rank-3 td { background:#FBE9E7 !important; }
+
+  .stat-grid {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px;
+  }
+  .stat-box { background:var(--pale); border-radius:8px; padding:12px; text-align:center; }
+  .stat-box .sv { font-size:22px; font-weight:800; color:#1A3A5C; }
+  .stat-box .sl { font-size:10px; color:var(--mist); margin-top:2px; }
+
+  .empty { text-align:center; padding:32px; color:var(--mist); font-size:13px; }
+
+  @media(max-width:600px){
+    .tab { font-size:10px; padding:10px 4px; }
+    .data-table { font-size:11px; }
+    .data-table th, .data-table td { padding:6px 6px; }
+    .stat-grid { grid-template-columns:1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <div class="app-header h1" style="font-size:15px;font-weight:700;">計算力育成プログラム</div>
+    <div class="sub">管理画面 - 本郷校</div>
+  </div>
+  <div class="admin-badge">ADMIN</div>
+</div>
+
+<!-- ログイン画面 -->
+<div class="screen active" id="screenLogin">
+  <div class="login-card">
+    <div class="login-title">管理者ログイン</div>
+    <div class="login-sub">管理者パスワードを入力してください</div>
+    <div class="form-group">
+      <label>管理者パスワード</label>
+      <input class="form-input" id="adminPwInput" type="password" placeholder="パスワード" autocomplete="off">
+    </div>
+    <div class="err" id="loginErr"></div>
+    <button class="btn btn-primary btn-block" onclick="doAdminLogin()" style="margin-top:10px;">ログイン</button>
+  </div>
+</div>
+
+<!-- メイン画面 -->
+<div class="screen" id="screenMain">
+  <div style="max-width:900px;margin:0 auto;padding:20px;">
+
+    <!-- タブ -->
+    <div class="tab-bar">
+      <button class="tab active" onclick="switchTab('tabUsers')">👥 生徒管理</button>
+      <button class="tab" onclick="switchTab('tabLogs')">📋 ログ確認</button>
+      <button class="tab" onclick="switchTab('tabRanking')">🏆 ランキング</button>
+    </div>
+
+    <!-- ─── 生徒管理タブ ─── -->
+    <div id="tabUsers">
+
+      <!-- 生徒登録フォーム -->
+      <div class="card">
+        <div class="card-title">➕ 生徒登録</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>生徒コード</label>
+            <input class="form-input" id="newCode" type="text" placeholder="例: H001">
+          </div>
+          <div class="form-group">
+            <label>パスワード</label>
+            <input class="form-input" id="newPw" type="text" placeholder="数字4桁など">
+          </div>
+          <div class="form-group">
+            <label>ニックネーム（任意）</label>
+            <input class="form-input" id="newNick" type="text" placeholder="生徒が初回設定も可">
+          </div>
+        </div>
+        <div class="err" id="addUserErr"></div>
+        <button class="btn btn-primary" onclick="addUser()" style="margin-top:10px;">登録</button>
+      </div>
+
+      <!-- 生徒一覧 -->
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div class="card-title" style="margin:0;">👥 生徒一覧</div>
+          <button class="btn btn-secondary btn-sm" onclick="loadUsers()">🔄 更新</button>
+        </div>
+        <div id="usersList"><div class="empty">読み込み中...</div></div>
+      </div>
+    </div>
+
+    <!-- ─── ログ確認タブ ─── -->
+    <div id="tabLogs" style="display:none;">
+      <div class="card">
+        <div class="card-title">📋 ログ検索</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>生徒コード（空白で全員）</label>
+            <input class="form-input" id="logCode" type="text" placeholder="例: H001">
+          </div>
+          <div class="form-group" style="flex:0 0 auto;">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" onclick="loadLogs()">検索</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div id="logStats" style="margin-bottom:12px;"></div>
+        <div id="logsList"><div class="empty">生徒コードを指定して検索してください</div></div>
+      </div>
+    </div>
+
+    <!-- ─── ランキングタブ ─── -->
+    <div id="tabRanking" style="display:none;">
+      <div class="card">
+        <div class="card-title">🏆 ランキング表示</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>級・段位を選択</label>
+            <select class="form-input" id="rankLevel"></select>
+          </div>
+          <div class="form-group" style="flex:0 0 auto;">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" onclick="loadAdminRanking()">表示</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="rankingCard" style="display:none;">
+        <div class="card-title" id="rankingCardTitle"></div>
+        <p style="font-size:11px;color:var(--mist);margin-bottom:8px;">検定モード・満点のみ対象</p>
+        <div id="rankingBody"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// 設定
+// ════════════════════════════════════════════════════════
+const GAS_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+
+// 全LEVELS（ランキング選択用）
+const ALL_LEVELS = [
+  {key:"10kyu",title:"10級 10の補数"},{key:"9kyu",title:"9級 1桁たし算"},
+  {key:"8kyu",title:"8級 100の補数"},{key:"7kyuA",title:"7級A 2桁引き算"},
+  {key:"7kyuB",title:"7級B 九九2〜5段"},{key:"6kyuA",title:"6級A 九九全段"},
+  {key:"6kyuB",title:"6級B 3桁たし算"},{key:"6kyuC",title:"6級C 九九÷余りなし"},
+  {key:"6kyuD",title:"6級D 九九÷余りあり"},{key:"5kyuA",title:"5級A 3桁引き算"},
+  {key:"5kyuB",title:"5級B 3桁MIX"},{key:"4kyuA",title:"4級A 2桁×2"},
+  {key:"4kyuB",title:"4級B ÷2"},{key:"4kyuC",title:"4級C 2桁×5"},
+  {key:"4kyuD",title:"4級D ÷5"},{key:"4kyuE",title:"4級E 2桁×1桁"},
+  {key:"4kyuF",title:"4級F ÷1桁"},{key:"3kyuA",title:"3級A ○5型"},
+  {key:"3kyuB",title:"3級B ×5・×25・×125"},{key:"3kyuC",title:"3級C ×99型"},
+  {key:"3kyuD",title:"3級D ×11"},{key:"3kyuE",title:"3級E 工夫MIX"},
+  {key:"3kyuF",title:"3級F 素因数分解"},{key:"3kyuG",title:"3級G 素因数の積→元"},
+  {key:"3kyuH",title:"3級H 和と積"},{key:"3kyuI",title:"3級I 和差算"},
+  {key:"2kyuA",title:"2級A 分数①"},{key:"2kyuB",title:"2級B 分数②"},
+  {key:"2kyuC",title:"2級C 分数③"},{key:"2kyuD",title:"2級D 分数④"},
+  {key:"1kyuA",title:"1級A 約分"},{key:"1kyuB",title:"1級B 整数×分数"},
+  {key:"1kyuC",title:"1級C 分数かけ算①"},{key:"1kyuD",title:"1級D 分数かけ算②"},
+  {key:"1kyuE",title:"1級E 分数かけ算③"},
+  {key:"shodan_a",title:"初段A 正負の和2項"},{key:"shodan_b",title:"初段B 正負の和3項"},
+  {key:"shodan_c",title:"初段C 正負かけ算"},{key:"nidan_a",title:"二段A 正負わり算"},
+  {key:"nidan_b",title:"二段B 平方数"},{key:"nidan_c",title:"二段C 平方根"},
+  {key:"sandan_a",title:"三段A 連立加減"},{key:"sandan_b",title:"三段B 連立代入"},
+  {key:"yondan_a",title:"四段A ルート変形"},{key:"yondan_b",title:"四段B ルートかけ算"},
+  {key:"yondan_c",title:"四段C √の2乗展開"},{key:"godan_a",title:"五段A 一次関数"},
+  {key:"meijin",title:"名人 全段位MIX"}
+];
+
+let adminPw = '';
+let currentTab = 'tabUsers';
+
+// ════════════════════════════════════════════════════════
+// API通信
+// ════════════════════════════════════════════════════════
+async function gasCall(body) {
+  try {
+    const res = await fetch(GAS_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify(body)
+    });
+    return await res.json();
+  } catch(e) {
+    return {ok:false, error:'ネットワークエラー: '+e.message};
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// ログイン
+// ════════════════════════════════════════════════════════
+async function doAdminLogin() {
+  const pw = document.getElementById('adminPwInput').value;
+  if (!pw) { document.getElementById('loginErr').textContent = 'パスワードを入力してください'; return; }
+
+  document.getElementById('loginErr').textContent = '確認中...';
+  // 管理者PWの確認はgetUsersで行う（GAS側でcheckAdmin）
+  const res = await gasCall({action:'getUsers', adminPw: pw});
+  if (!res.ok) {
+    document.getElementById('loginErr').textContent = res.error || '認証失敗';
+    return;
+  }
+
+  adminPw = pw;
+  document.querySelector('.screen.active').classList.remove('active');
+  document.getElementById('screenMain').classList.add('active');
+
+  // ランキングプルダウン初期化
+  const sel = document.getElementById('rankLevel');
+  sel.innerHTML = ALL_LEVELS.map(l=>`<option value="${l.key}">${l.title}</option>`).join('');
+
+  renderUsersList(res.users);
+}
+
+// ════════════════════════════════════════════════════════
+// タブ切り替え
+// ════════════════════════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  ['tabUsers','tabLogs','tabRanking'].forEach(tid=>{
+    document.getElementById(tid).style.display = tid===id?'block':'none';
+  });
+  const idx = ['tabUsers','tabLogs','tabRanking'].indexOf(id);
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  currentTab = id;
+  if (id==='tabUsers') loadUsers();
+}
+
+// ════════════════════════════════════════════════════════
+// 生徒管理
+// ════════════════════════════════════════════════════════
+async function addUser() {
+  const code = document.getElementById('newCode').value.trim();
+  const pw   = document.getElementById('newPw').value.trim();
+  const nick = document.getElementById('newNick').value.trim();
+  const err  = document.getElementById('addUserErr');
+  if (!code||!pw) { err.textContent='コードとパスワードは必須です'; return; }
+
+  err.textContent='登録中...';
+  const res = await gasCall({action:'addUser', adminPw, code, password:pw, nickname:nick});
+  if (!res.ok) { err.textContent=res.error||'登録失敗'; return; }
+
+  err.textContent='';
+  err.style.color='var(--teal)';
+  err.textContent=`${code} を登録しました`;
+  setTimeout(()=>{ err.textContent=''; err.style.color=''; }, 3000);
+  document.getElementById('newCode').value='';
+  document.getElementById('newPw').value='';
+  document.getElementById('newNick').value='';
+  loadUsers();
+}
+
+async function loadUsers() {
+  const el = document.getElementById('usersList');
+  el.innerHTML='<div class="empty">読み込み中...</div>';
+  const res = await gasCall({action:'getUsers', adminPw});
+  if (!res.ok) { el.innerHTML=`<div class="empty" style="color:#AA3322;">${res.error}</div>`; return; }
+  renderUsersList(res.users);
+}
+
+function renderUsersList(users) {
+  const el = document.getElementById('usersList');
+  if (!users||users.length===0) { el.innerHTML='<div class="empty">生徒が登録されていません</div>'; return; }
+
+  el.innerHTML=`
+    <table class="data-table">
+      <tr><th>コード</th><th>ニックネーム</th><th>登録日</th><th>最終ログイン</th><th>操作</th></tr>
+      ${users.map(u=>`
+        <tr>
+          <td><strong>${u.code}</strong></td>
+          <td>${u.nickname}</td>
+          <td style="color:var(--mist);">${fmtDate(u.regDate)}</td>
+          <td style="color:var(--mist);">${u.lastLogin?fmtDate(u.lastLogin):'-'}</td>
+          <td style="display:flex;gap:4px;flex-wrap:wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="showLogs('${u.code}')">ログ</button>
+            <button class="btn btn-secondary btn-sm" onclick="editUser('${u.code}')">編集</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteUser('${u.code}')">削除</button>
+          </td>
+        </tr>`).join('')}
+    </table>`;
+}
+
+async function editUser(code) {
+  const newPw   = prompt(`${code} の新しいパスワード（変更しない場合は空欄）`);
+  const newNick = prompt(`${code} の新しいニックネーム（変更しない場合は空欄）`);
+  if (newPw===null && newNick===null) return;
+  const body = {action:'updateUser', adminPw, code};
+  if (newPw)   body.newPassword  = newPw;
+  if (newNick) body.newNickname  = newNick;
+  const res = await gasCall(body);
+  alert(res.ok ? '更新しました' : res.error);
+  if (res.ok) loadUsers();
+}
+
+async function deleteUser(code) {
+  if (!confirm(`${code} を削除しますか？\nログデータは残ります。`)) return;
+  const res = await gasCall({action:'deleteUser', adminPw, code});
+  alert(res.ok ? '削除しました' : res.error);
+  if (res.ok) loadUsers();
+}
+
+// ════════════════════════════════════════════════════════
+// ログ確認
+// ════════════════════════════════════════════════════════
+function showLogs(code) {
+  switchTab('tabLogs');
+  document.getElementById('logCode').value = code;
+  loadLogs();
+}
+
+async function loadLogs() {
+  const code = document.getElementById('logCode').value.trim();
+  const el   = document.getElementById('logsList');
+  const stats= document.getElementById('logStats');
+  el.innerHTML='<div class="empty">読み込み中...</div>';
+  stats.innerHTML='';
+
+  const res = await gasCall({action:'getLogs', adminPw, targetCode:code||undefined, limit:200});
+  if (!res.ok) { el.innerHTML=`<div class="empty" style="color:#AA3322;">${res.error}</div>`; return; }
+  if (!res.logs||res.logs.length===0) { el.innerHTML='<div class="empty">ログがありません</div>'; return; }
+
+  // 統計
+  const testLogs = res.logs.filter(l=>l.mode==='test');
+  const perfect  = testLogs.filter(l=>l.correct===l.nQ);
+  stats.innerHTML=`
+    <div class="stat-grid">
+      <div class="stat-box"><div class="sv">${res.logs.length}</div><div class="sl">総セッション数</div></div>
+      <div class="stat-box"><div class="sv">${testLogs.length}</div><div class="sl">検定実施回数</div></div>
+      <div class="stat-box"><div class="sv">${perfect.length}</div><div class="sl">満点回数</div></div>
+    </div>`;
+
+  el.innerHTML=`
+    <table class="data-table">
+      <tr><th>日時</th><th>生徒</th><th>級</th><th>正答率</th><th>タイム</th><th>モード</th><th>合否</th></tr>
+      ${res.logs.map(l=>{
+        const m=Math.floor(l.time/60), s=l.time%60;
+        const tStr=m>0?`${m}分${s}秒`:`${l.time}秒`;
+        return `<tr>
+          <td style="color:var(--mist);">${fmtDate(l.date)}</td>
+          <td>${l.nick||l.code}</td>
+          <td>${l.title}</td>
+          <td>${l.rate}%</td>
+          <td>${tStr}</td>
+          <td><span class="status ${l.mode}">${l.mode==='test'?'検定':'練習'}</span></td>
+          <td><span class="status ${l.passed==='合格'?'pass':'fail'}">${l.passed||'-'}</span></td>
+        </tr>`;
+      }).join('')}
+    </table>`;
+}
+
+// ════════════════════════════════════════════════════════
+// ランキング
+// ════════════════════════════════════════════════════════
+async function loadAdminRanking() {
+  const level = document.getElementById('rankLevel').value;
+  const lv    = ALL_LEVELS.find(l=>l.key===level);
+  const card  = document.getElementById('rankingCard');
+  const body  = document.getElementById('rankingBody');
+  const title = document.getElementById('rankingCardTitle');
+
+  card.style.display='block';
+  title.textContent=`🏆 ${lv.title}`;
+  body.innerHTML='<div class="empty">読み込み中...</div>';
+
+  const res = await gasCall({action:'ranking', adminPw, level});
+  if (!res.ok) { body.innerHTML=`<div class="empty" style="color:#AA3322;">${res.error}</div>`; return; }
+  if (!res.ranking||res.ranking.length===0) {
+    body.innerHTML='<div class="empty">まだ記録がありません<br><small>検定モードで満点を出すとランキングに載ります</small></div>';
+    return;
+  }
+
+  const rows=res.ranking.map((r,i)=>{
+    const m=Math.floor(r.best/60), s=r.best%60;
+    const t=m>0?`${m}分${s}秒`:`${r.best}秒`;
+    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    return `<tr class="rank-${i+1}">
+      <td style="text-align:center;">${medal||i+1}</td>
+      <td>${r.nickname}</td>
+      <td style="text-align:right;">${t}</td>
+    </tr>`;
+  }).join('');
+
+  body.innerHTML=`
+    <table class="rank-table">
+      <tr><th>順位</th><th>ニックネーム</th><th>ベストタイム</th></tr>
+      ${rows}
+    </table>`;
+}
+
+// ════════════════════════════════════════════════════════
+// ユーティリティ
+// ════════════════════════════════════════════════════════
+function fmtDate(d) {
+  if (!d) return '-';
+  const dt = new Date(d);
+  if (isNaN(dt)) return String(d).slice(0,16);
+  return `${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+}
+
+// Enterキーでログイン
+document.getElementById('adminPwInput').addEventListener('keydown', e=>{
+  if(e.key==='Enter') doAdminLogin();
+});
+</script>
+</body>
+</html>

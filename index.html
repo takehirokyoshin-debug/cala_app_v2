@@ -975,7 +975,7 @@
 // 定数・設定
 // ════════════════════════════════════════════════════════
 // ★ここにデプロイ後のGAS URLを貼り付け
-const GAS_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycby662ONWWOW86fZIvqoT92pXJo9qhFbXZvxCRKQZWlzH9--tvLVS7afIO62cGi4PDhmcg/exec';
 
 const LEVELS = [
   // ── 10〜8級: 1列 ──────────────────────────────────
@@ -2751,6 +2751,8 @@ function npSubmit(){
 
 // PCキーボード
 document.addEventListener('keydown',function(e){
+  const tag = document.activeElement && document.activeElement.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA') return;
   if(answered){if(e.key==='Enter')e.preventDefault();return;}
   if(e.key>='0'&&e.key<='9'){e.preventDefault();npInput(e.key);}
   else if(e.key==='-'){e.preventDefault();npInput('-');}

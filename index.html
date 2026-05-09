@@ -668,6 +668,37 @@
   .mylog-mode.practice { background:var(--teal); color:white; }
   .mylog-pass { color:var(--teal); font-weight:700; font-size:11px; }
 
+
+  /* ── ドット表示エリア ── */
+  .dot-canvas {
+    position: relative;
+    width: 300px;
+    height: 240px;
+    margin: 0 auto;
+    background: var(--pale);
+    border-radius: 16px;
+    border: 2px solid var(--pale2);
+    overflow: hidden;
+  }
+  .dot-canvas.hidden-dots .dot-circle { opacity: 0; }
+  .dot-circle {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--navy);
+    transform: translate(-50%, -50%);
+    transition: opacity 0.3s;
+  }
+  .dot-flash-timer {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--coral);
+    margin-top: 6px;
+    min-height: 20px;
+  }
+
 </style>
 </head>
 <body>
@@ -804,6 +835,11 @@
   <div class="question-card" id="questionCard">
     <div class="q-num" id="qNum">問題 1</div>
     <div class="q-problem" id="qProblem">　</div>
+      <!-- ドット表示エリア（ドット問題のみ表示） -->
+      <div id="dotArea" style="display:none;margin:8px 0;">
+        <div class="dot-canvas" id="dotCanvas"></div>
+        <div class="dot-flash-timer" id="dotTimer"></div>
+      </div>
 
     <!-- 通常の1ボックス入力 -->
     <div class="answer-row" id="singleAnswerRow">
@@ -897,6 +933,30 @@
             </div>
           </div>
         </div>
+        <!-- 素因数分解（primeFactors）: 素数ボタン選択式 -->
+        <div id="npRowPrimeFactors" style="display:none;">
+          <div style="font-size:11px;color:var(--mist);text-align:center;margin-bottom:4px;">
+            素数ボタンをタップして因数を追加（⌫で最後の因数を削除）
+          </div>
+          <div id="npPfDisplay" style="
+            background:white;border:2px solid var(--teal);border-radius:10px;
+            padding:8px 12px;font-size:20px;font-weight:700;color:var(--navy);
+            min-height:46px;text-align:center;margin-bottom:8px;
+            display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px;
+            letter-spacing:0.03em;">
+            <span style="color:var(--mist);font-size:16px;">素数を選んでください</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+            <button class="np-btn" ontouchstart="" onclick="npPfAdd(2)"  style="font-size:18px;">2</button>
+            <button class="np-btn" ontouchstart="" onclick="npPfAdd(3)"  style="font-size:18px;">3</button>
+            <button class="np-btn" ontouchstart="" onclick="npPfAdd(5)"  style="font-size:18px;">5</button>
+            <button class="np-btn" ontouchstart="" onclick="npPfAdd(7)"  style="font-size:18px;">7</button>
+            <button class="np-btn" ontouchstart="" onclick="npPfAdd(11)" style="font-size:18px;">11</button>
+            <button class="np-btn" ontouchstart="" onclick="npPfAdd(13)" style="font-size:18px;">13</button>
+            <button class="np-btn" ontouchstart="" onclick="npPfAdd(17)" style="font-size:18px;">17</button>
+            <button class="np-btn" ontouchstart="" onclick="npPfAdd(19)" style="font-size:18px;">19</button>
+          </div>
+        </div>
         <!-- √展開（sqrtExpand）: 整数 ±ボタン 係数√根号 -->
         <div id="npRowSqrtExpand" style="display:none;">
           <div style="display:flex;align-items:center;justify-content:center;gap:5px;flex-wrap:nowrap;">
@@ -978,6 +1038,18 @@
 const GAS_URL = 'https://script.google.com/macros/s/AKfycby662ONWWOW86fZIvqoT92pXJo9qhFbXZvxCRKQZWlzH9--tvLVS7afIO62cGi4PDhmcg/exec';
 
 const LEVELS = [
+  // ── チュートリアル ────────────────────────────────────
+  { key:"tut_a", label:"入門A", color:"#5C7A2A", group:"tutorial",
+    title:"ドット数え（じっくり）", desc:"ずっと表示・20問・3分",
+    timeLimit:180, nQ:20, passRate:0.85,
+    inputType:"dots", dotMode:"always",
+    gen:()=>genDots(20) },
+  { key:"tut_b", label:"入門B", color:"#5C7A2A", group:"tutorial",
+    title:"ドット数え（フラッシュ）", desc:"2秒で消える・20問・3分",
+    timeLimit:180, nQ:20, passRate:0.80,
+    inputType:"dots", dotMode:"flash",
+    gen:()=>genDots(20) },
+
   // ── 10〜8級: 1列 ──────────────────────────────────
   {key:"10kyu", label:"10級", color:"#0F6E56", group:"10-8",
    title:"10の補数",  desc:"20問・3分", timeLimit:180, nQ:20, passRate:0.90, gen:()=>genComplement10()},
@@ -1029,8 +1101,8 @@ const LEVELS = [
   {key:"3kyuE", label:"3級E", color:"#C8820A", group:"3-1",
    title:"工夫MIX（3A〜3D）",desc:"12問・3分", timeLimit:180, nQ:12, passRate:0.85, gen:()=>genKakuMix3()},
   {key:"3kyuF", label:"3級F", color:"#C8820A", group:"3-1",
-   title:"素因数分解",   desc:"12問・2分",     timeLimit:120, nQ:12, passRate:0.85,
-   inputType:"two", inputLabels:["小","大"], gen:()=>genPrimeFactorize2()},
+   title:"素因数分解",   desc:"12問・3分",     timeLimit:180, nQ:12, passRate:0.85,
+   inputType:"primeFactors", gen:()=>genPrimeFactorizeNew()},
   {key:"3kyuG", label:"3級G", color:"#C8820A", group:"3-1",
    title:"素因数の積→元",desc:"12問・2分",     timeLimit:120, nQ:12, passRate:0.85, gen:()=>genFactorProduct()},
   {key:"3kyuH", label:"3級H", color:"#C8820A", group:"3-1",
@@ -1279,15 +1351,6 @@ function genSumProduct() {
 }
 
 
-// √n → {coef, rad} (a√b の形)
-function simplifySqrt(n) {
-  let coef=1, rad=n;
-  for(let i=2; i*i<=rad; i++) {
-    while(rad%(i*i)===0) { coef*=i; rad=Math.floor(rad/(i*i)); }
-  }
-  return {coef, rad};
-}
-
 // ════════════════════════════════════════════════════════
 // 新規追加: 問題生成関数
 // ════════════════════════════════════════════════════════
@@ -1337,6 +1400,38 @@ function genTimes25and99() {
   for(let a=12;a<=99;a++)
     pool.push(makeProblem(`${a} × 99`, a*99));
   return shuffle(pool).slice(0,12);
+}
+
+
+// ── 素因数分解（素数ボタン選択式・200以下） ──
+function genPrimeFactorizeNew() {
+  const PRIMES=[2,3,5,7,11,13,17,19];
+  function factorize(n){
+    const f=[]; let d=2;
+    while(d*d<=n){while(n%d===0){f.push(d);n/=d;}d++;}
+    if(n>1)f.push(n); return f;
+  }
+  // プール構築
+  const by={2:[],3:[],4:[],'5plus':[]};
+  for(let n=4;n<=200;n++){
+    const f=factorize(n);
+    if(f.length<2) continue;
+    if(f.some(p=>!PRIMES.includes(p))) continue;
+    const bucket=f.length<=4?f.length:'5plus';
+    by[bucket].push({n, f});
+  }
+  // 2因数3問・3因数4問・4因数3問・5以上2問の割合で混在
+  const picks=[
+    ...shuffle(by[2]).slice(0,3),
+    ...shuffle(by[3]).slice(0,4),
+    ...shuffle(by[4]).slice(0,3),
+    ...shuffle(by['5plus']).slice(0,2),
+  ];
+  return shuffle(picks).slice(0,12).map(({n,f})=>({
+    display: `${n}`,
+    answer:  f.join(' × '),
+    answerFactors: [...f]   // ソート済みの因数配列
+  }));
 }
 
 // 素因数分解2因数版: p×q形式のみ → 2ボックス入力
@@ -1568,25 +1663,6 @@ function gen1kyu2() {
   return shuffle(pairs).slice(0,10);
 }
 
-// ── 1級C: 分数かけ算（約分2〜3回・答えは仮分数か整数） ──
-// inputType: frac  両方で約分できるもの
-function gen1kyu3() {
-  const probs=[];
-  for(let d1=2;d1<=12;d1++) for(let n1=1;n1<=d1;n1++){
-    if(gcd(n1,d1)!==1) continue;
-    for(let d2=2;d2<=12;d2++) for(let n2=1;n2<=d2;n2++){
-      if(gcd(n2,d2)!==1) continue;
-      const g12=gcd(n1,d2); const g21=gcd(n2,d1);
-      if(g12<=1||g21<=1) continue; // 両方で約分できるもの
-      const rn=n1*n2; const rd=d1*d2;
-      const g=gcd(rn,rd); const fn=rn/g; const fd=rd/g;
-      if(fd>20||fn>20) continue;
-      probs.push({display:`${n1}/${d1} × ${n2}/${d2}`, answer:fd===1?String(fn):`${fn}/${fd}`});
-    }
-  }
-  return shuffle(probs).slice(0,10);
-}
-
 // ── 1級C: 分数かけ算（約分2箇所・仮分数OK・既約）──
 // 6,7,9での約分含む
 function gen1kyu3() {
@@ -1655,35 +1731,6 @@ function genProportion() {
     probs.push(makeProblem(`${a}:${b}=${c}:x`, 'x='+x));
   });
   return shuffle(probs).slice(0,10);
-}
-
-function genSimultaneous() {
-  const probs=[];
-  for(let t=0;t<50;t++){
-    const x=rnd(-6,6); const y=rnd(-6,6);
-    if(x===0||y===0) continue;
-    const a1=rnd(2,5); let b1=rnd(2,5); if(a1===b1) b1++;
-    const a2=rnd(1,3); const b2=rnd(1,3);
-    const c1=a1*x+b1*y; const c2=a2*x+b2*y;
-    probs.push(makeProblem(
-      `${a1}x+${b1}y=${c1} / ${a2}x+${b2}y=${c2}`.replace(/\+-/g,'-'),
-      `x=${x},y=${y}`
-    ));
-    if(probs.length>=8) break;
-  }
-  return probs;
-}
-
-function genSimultaneousSub() {
-  const probs=[];
-  for(let t=0;t<50;t++){
-    const x=rnd(-5,5); if(x===0) continue;
-    const a=rnd(2,4); const b=rnd(-5,5);
-    const y=a*x+b; const c=rnd(2,5); const d=c*x+y;
-    probs.push(makeProblem(`y=${a}x${b>=0?'+'+b:b}, ${c}x+y=${d}`.replace(/\+-/g,'-'), `x=${x},y=${y}`));
-    if(probs.length>=8) break;
-  }
-  return probs;
 }
 
 function genSqPlus() {
@@ -2200,6 +2247,44 @@ function genMeijin() {
 
 
 // ════════════════════════════════════════════════════════
+// ドット数え問題ジェネレーター
+// ════════════════════════════════════════════════════════
+function genDots(n) {
+  const probs = [];
+  for(let i = 0; i < n; i++) {
+    const count = 10 + Math.floor(Math.random() * 11); // 10〜20個
+    const dots  = placeDots(count);
+    probs.push({ display: '', answer: String(count), dotCount: count, dots });
+  }
+  return probs;
+}
+
+function placeDots(count) {
+  const dots = [];
+  const W = 300, H = 240, R = 14, pad = 20, minDist = R * 2.5;
+  for(let i = 0; i < count; i++) {
+    let placed = false;
+    for(let t = 0; t < 200; t++) {
+      const x = pad + R + Math.random() * (W - (pad + R) * 2);
+      const y = pad + R + Math.random() * (H - (pad + R) * 2);
+      const ok = dots.every(d => {
+        const dx = d.x - x, dy = d.y - y;
+        return Math.sqrt(dx*dx + dy*dy) >= minDist;
+      });
+      if(ok) { dots.push({x, y}); placed = true; break; }
+    }
+    if(!placed) {
+      // 重なっても置く
+      dots.push({
+        x: pad + R + Math.random() * (W - (pad + R) * 2),
+        y: pad + R + Math.random() * (H - (pad + R) * 2)
+      });
+    }
+  }
+  return dots;
+}
+
+// ════════════════════════════════════════════════════════
 // 状態
 // ════════════════════════════════════════════════════════
 
@@ -2236,6 +2321,7 @@ function renderLevelGrid() {
 
   // グループ定義
   const groups = [
+    { id:'tutorial', cols:2, label:'🎯 入門・ウォームアップ', labelColor:'#5C7A2A' },
     { id:'10-8',   cols:1, label:null },
     { id:'7-4',    cols:2, label:null },
     { id:'3-1',    cols:3, label:null },
@@ -2382,6 +2468,20 @@ function startSessionTimer(limitSec) {
 // ════════════════════════════════════════════════════════
 
 
+// ── ドットをdotCanvasに描画 ─────────────────────────────
+function renderDots(dots) {
+  const canvas = document.getElementById('dotCanvas');
+  if(!canvas) return;
+  canvas.innerHTML = '';
+  dots.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'dot-circle';
+    el.style.left = d.x + 'px';
+    el.style.top  = d.y + 'px';
+    canvas.appendChild(el);
+  });
+}
+
 // 問題文の分数を縦表示HTMLに変換
 function formatProblemDisplay(text) {
   // "a/b" パターンを縦分数に変換
@@ -2397,7 +2497,7 @@ function getInputType(){
 }
 function isTwoBoxMode(){
   const t=getInputType();
-  return t==='two'||t==='sqrt'||t==='frac'||t==='fracMixed'||t==='sqrtExpand'||t==='linearFunc';
+  return t==='two'||t==='sqrt'||t==='frac'||t==='fracMixed'||t==='sqrtExpand'||t==='linearFunc'||t==='primeFactors';
 }
 
 // ── 変数 ─────────────────────────────────────────────
@@ -2407,6 +2507,36 @@ let npMixPhase=1,  npMixInt_v='',  npMixNum_v='', npMixDen_v='';
 let npSePhase=1,   npSeInt_v='',   npSeSign_v='+', npSeCoef_v='', npSeRad_v='';
 // 一次関数: 傾きは文字列（整数または n/d 形式）
 let npLfPhase=1, npLfSlope_v='', npLfInt_v='';
+
+// ── 素因数分解: 状態変数 ─────────────────────────────────
+let npPfSelected = []; // 選択した因数の配列（順序は関係ない）
+
+// 素数ボタンタップ
+function npPfAdd(p) {
+  if(answered) return;
+  // 積が問題の数を超えないか軽くチェック（最大200）
+  const prod=npPfSelected.reduce((a,b)=>a*b,1)*p;
+  if(prod>9999) return; // 大きすぎるものは追加しない
+  npPfSelected.push(p);
+  npPfSelected.sort((a,b)=>a-b);
+  npRefresh();
+}
+
+// ⌫ で最後の因数を削除（primeFactors 用）
+// ── 既存の npDel に追記する形で処理 ──
+
+// 採点: 選択した因数が正解と一致するか
+function checkAnswerPrimeFactors() {
+  if(answered) return;
+  if(npPfSelected.length<2) return; // 因数が1つ以下なら採点しない
+  const prob=currentProblems[currentIndex];
+  const correct_f=[...prob.answerFactors].sort((a,b)=>a-b);
+  const user_f=[...npPfSelected].sort((a,b)=>a-b);
+  const correct=(JSON.stringify(user_f)===JSON.stringify(correct_f));
+  doResult(user_f.join(' × '), correct, (Date.now()-problemStartTime)/1000);
+}
+
+
 
 // 符号トグル（sqrtExpand用）
 function toggleSeSign(){
@@ -2439,6 +2569,8 @@ function syncVisibleInputs(){
   if(rSE) rSE.style.display =t==='sqrtExpand'?'block':'none';
   const rLF=document.getElementById('npRowLinearFunc');
   if(rLF) rLF.style.display=t==='linearFunc'?'block':'none';
+  const rPF=document.getElementById('npRowPrimeFactors');
+  if(rPF) rPF.style.display=t==='primeFactors'?'block':'none';
   // /ボタンは linearFunc の傾き入力フェーズのみ表示
   const slashRow=document.getElementById('npSlashRow');
   if(slashRow) slashRow.style.display=(t==='linearFunc'&&npLfPhase===1)?'block':'none';
@@ -2464,6 +2596,18 @@ function npRefresh(){
     set('npSeInt', npSeInt_v,  npSePhase===1);
     set('npSeCoef',npSeCoef_v, npSePhase===2);
     set('npSeRad', npSeRad_v,  npSePhase===3);
+  } else if(t==='primeFactors'){
+    // 素因数分解: 選択済み因数をボタン表示エリアに描画
+    const pfd=document.getElementById('npPfDisplay');
+    if(pfd){
+      if(npPfSelected.length===0){
+        pfd.innerHTML='<span style="color:var(--mist);font-size:16px;">素数を選んでください</span>';
+      } else {
+        pfd.innerHTML=npPfSelected.map((p,i)=>
+          (i===0?'':' <span style="color:var(--mist)">×</span> ')+'<span style="color:var(--navy)">'+p+'</span>'
+        ).join('');
+      }
+    }
   } else if(t==='linearFunc'){
     set('npLfSlope',     npLfSlope_v, npLfPhase===1);
     set('npLfIntercept', npLfInt_v,   npLfPhase===2);
@@ -2498,6 +2642,7 @@ function showQuestion(){
   npMixPhase=1;  npMixInt_v='';  npMixNum_v=''; npMixDen_v='';
   npSePhase=1;   npSeInt_v='';   npSeSign_v='+'; npSeCoef_v=''; npSeRad_v='';
   npLfPhase=1; npLfSlope_v=''; npLfInt_v='';
+  npPfSelected=[];
 
   // 符号ボタンリセット
   const signBtn=document.getElementById('npSeSignBtn');
@@ -2513,6 +2658,8 @@ function showQuestion(){
       t==='fracMixed'?'次へ →':
       t==='sqrtExpand'?'√係数へ →':
       t==='linearFunc'?'切片へ →':
+      t==='primeFactors'?'決定':
+      t==='dots'?'決定':
       isTB?'次へ →':'決定';
   }
 
@@ -2521,6 +2668,8 @@ function showQuestion(){
     (t==='frac'||t==='fracMixed')?'整数（ない場合はそのまま次へ）→ 分子 → 分母 → 決定':
     t==='sqrtExpand'?'整数部 → 符号ボタン → √係数 → √内 → 決定':
     t==='linearFunc'?'傾きを入力（分数なら / を使用、±1のときは 1 または -1）→ 切片 → 決定':
+    t==='primeFactors'?'素数ボタンをタップして因数を追加 → 決定で採点':
+    t==='dots'?'ドットをかぞえて数字を入力 → 決定':
     isTB?'2つの数を入力 → 次へ → 決定で採点 → 自動で次へ':
     '答えを入力 → 決定で採点 → 自動で次の問題へ';
 
@@ -2539,6 +2688,40 @@ function showQuestion(){
    'npLfSlope','npLfIntercept'].forEach(id=>{
     const e=document.getElementById(id); if(e) e.className='numpad-display';
   });
+
+  // ドット問題の処理
+  const dotArea   = document.getElementById('dotArea');
+  const dotCanvas = document.getElementById('dotCanvas');
+  const dotTimer  = document.getElementById('dotTimer');
+  if(t==='dots'){
+    document.getElementById('qProblem').innerHTML = 'ドットをかぞえよう！';
+    dotArea.style.display='block';
+    renderDots(prob.dots);
+    dotTimer.textContent='';
+    const mode = lastLevel && lastLevel.dotMode;
+    if(mode==='flash'){
+      // フラッシュ: 2秒表示 → 隠す
+      dotCanvas.classList.remove('hidden-dots');
+      let remaining=2;
+      dotTimer.textContent=`${remaining} 秒後に消えます`;
+      const iv=setInterval(()=>{
+        remaining--;
+        if(remaining>0){
+          dotTimer.textContent=`${remaining} 秒後に消えます`;
+        } else {
+          clearInterval(iv);
+          dotCanvas.classList.add('hidden-dots');
+          dotTimer.textContent='消えた！いくつだった？';
+        }
+      },1000);
+    } else {
+      // 常時表示
+      dotCanvas.classList.remove('hidden-dots');
+      dotTimer.textContent='ゆっくり数えてね';
+    }
+  } else {
+    if(dotArea) dotArea.style.display='none';
+  }
 
   syncVisibleInputs();
   npRefresh();
@@ -2564,6 +2747,9 @@ function npInput(ch){
     if(npSePhase===1){ if(npSeInt_v.length<4) npSeInt_v+=ch; }
     else if(npSePhase===2){ if(ch==='-') return; if(npSeCoef_v.length<3) npSeCoef_v+=ch; }
     else { if(ch==='-') return; if(npSeRad_v.length<3) npSeRad_v+=ch; }
+  } else if(t==='primeFactors'){
+    checkAnswerPrimeFactors();
+    return;
   } else if(t==='linearFunc'){
     if(npLfPhase===1){
       // 傾き入力: 数字・-・/ が使える
@@ -2643,6 +2829,11 @@ function npDel(){
     if(npSePhase===1)      npSeInt_v=npSeInt_v.slice(0,-1);
     else if(npSePhase===2) npSeCoef_v=npSeCoef_v.slice(0,-1);
     else                   npSeRad_v=npSeRad_v.slice(0,-1);
+  } else if(t==='primeFactors'){
+    // 最後に追加した因数を削除
+    if(npPfSelected.length>0) npPfSelected.pop();
+    npRefresh();
+    return; // npRefreshを既に呼んだのでここで終わり
   } else if(t==='linearFunc'){
     const sub2=document.getElementById('npSubmit');
     function da2(id){const e=document.getElementById(id);if(e)e.classList.remove('active');}
@@ -2751,7 +2942,8 @@ function npSubmit(){
 
 // PCキーボード
 document.addEventListener('keydown',function(e){
-  const tag = document.activeElement && document.activeElement.tagName;
+  // input/textarea にフォーカスがある場合はテンキー処理をスキップ
+  const tag=document.activeElement&&document.activeElement.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA') return;
   if(answered){if(e.key==='Enter')e.preventDefault();return;}
   if(e.key>='0'&&e.key<='9'){e.preventDefault();npInput(e.key);}
